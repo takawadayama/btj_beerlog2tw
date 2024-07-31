@@ -1,63 +1,125 @@
-// src/app/user/page.tsx
 "use client";
+import { useState, useEffect } from 'react';
+import axios, { AxiosError } from 'axios';
 
-import { useEffect, useState } from 'react';
-import { fetchUser, fetchUserPhotos } from './fetchUser';
-import { User, Photo } from './types';
-
-interface UserPageProps {
-    userId: number;
+interface User {
+  user_id: number;
+  user_name: string;
+  user_profile: string;
+  user_picture: string;
 }
 
-function UserPage({ userId }: UserPageProps) {
-    const [user, setUser] = useState<User | null>(null);
-    const [photos, setPhotos] = useState<Photo[]>([]);
-    const [error, setError] = useState<string | null>(null);
+interface Photo {
+  photo_id: number;
+  photo_data: string;
+}
 
-    useEffect(() => {
-        async function getUserData() {
-            try {
-                const userData = await fetchUser(userId);
-                setUser(userData);
-                const userPhotos = await fetchUserPhotos(userId);
-                setPhotos(userPhotos);
-            } catch (error) {
-                if (error instanceof Error) {
-                    setError(error.message);
-                } else {
-                    setError("An unknown error occurred");
-                }
-            }
-        }
+interface UserWithPhotos {
+  user: User;
+  photos: Photo[];
+}
 
-        getUserData();
-    }, [userId]);
+interface ErrorResponse {
+  detail: string;
+}
 
-    if (error) {
-        return <div>Error: {error}</div>;
+export default function UserPage() {
+  const [userId, setUserId] = useState<number | null>(null);
+  const [userWithPhotos, setUserWithPhotos] = useState<UserWithPhotos | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // JWTからuser_idを取得する関数 (ログイン機能実装後に有効化)
+  const fetchUserIdFromJWT = () => {
+    const token = localStorage.getItem('token'); // JWTトークンをローカルストレージから取得
+    if (token) {
+      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
+      return decodedToken.sub; // ここでJWTのペイロードからuser_idを取得
     }
+    return null;
+  };
 
-    if (!user) {
-        return <div>Loading...</div>;
+  // JWTからuser_idを取得してuserIdステートに設定 (ログイン機能実装後に有効化)
+  useEffect(() => {
+    const id = fetchUserIdFromJWT();
+    if (id !== null) {
+      setUserId(id);
+      fetchUserWithPhotos(id); // JWTから取得したuser_idでユーザー情報をフェッチ
     }
+  }, []);
 
-    return (
-        <div>
-            <header>
-                <img src={user.user_picture} alt={user.user_name} />
-                <h1>{user.user_name}</h1>
-                <p>{user.user_profile}</p>
-            </header>
-            <section>
-                <h2>最近の投稿</h2>
-                <div>
-                    {photos.map(photo => (
-                        <img key={photo.photo_id} src={URL.createObjectURL(new Blob([photo.photo_data]))} alt="user photo" />
-                    ))}
+  const fetchUserWithPhotos = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(`http://localhost:8000/user_with_photos`, {
+        params: { user_id: id }
+      });
+      setUserWithPhotos(response.data);
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ErrorResponse>;
+      setError(axiosError.response?.data?.detail || 'User not found or an error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userId !== null) {
+      fetchUserWithPhotos(userId);
+    }
+  };
+
+  return (
+    <div className="p-4 lg:px-32">
+      {/* ログイン機能実装後に削除 */}
+      <div className="mb-4 p-4 border border-red-500 rounded">
+        <p className="text-red-500 font-bold mb-2">ログイン機能実装後に削除</p>
+        <form onSubmit={handleSubmit} className="mb-4">
+          <label className="block mb-2">
+            Enter User ID:
+            <input
+              type="number"
+              value={userId !== null ? userId : ''}
+              onChange={(e) => setUserId(parseInt(e.target.value))}
+              className="border p-2 rounded w-full"
+            />
+          </label>
+          <button type="submit" className="bg-blue-500 text-white p-2 rounded">Fetch User</button>
+        </form>
+      </div>
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+      {userWithPhotos && (
+        <div className="bg-white shadow rounded p-4">
+          <div className="flex items-center mb-4">
+            <img
+              src={`data:image/jpeg;base64,${userWithPhotos.user.user_picture}`}
+              alt="User Picture"
+              className="rounded-full w-32 h-32 object-cover"
+            />
+            <div className="ml-4">
+              <h2 className="text-xl font-bold">{userWithPhotos.user.user_name}</h2>
+              <p>{userWithPhotos.user.user_profile}</p>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Recent Posts</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {userWithPhotos.photos.map(photo => (
+                <div key={photo.photo_id} className="relative group">
+                  <img
+                    src={`data:image/jpeg;base64,${photo.photo_data}`}
+                    alt={`Post ${photo.photo_id}`}
+                    className="w-full h-64 object-cover rounded-md transition-transform duration-300 ease-in-out transform group-hover:scale-105"
+                  />
                 </div>
-            </section>
+              ))}
+            </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }
-
-export default UserPage;

@@ -1,22 +1,36 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
-from db_control.connect import get_db
-from db_control.crud import get_user, get_user_photos
-from db_control.schemas import User, Photo
+from db_control import crud, connect, schemas
+import base64
 
 app = FastAPI()
 
-@app.get("/user/{user_id}", response_model=User)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+# CORS設定
+origins = [
+    "http://localhost:3000",
+]
 
-@app.get("/user/{user_id}/photos", response_model=List[Photo])
-def read_user_photos(user_id: int, db: Session = Depends(get_db)):
-    photos = get_user_photos(db, user_id=user_id)
-    if photos is None:
-        raise HTTPException(status_code=404, detail="Photos not found")
-    return photos
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/user_with_photos", response_model=schemas.UserWithPhotos)
+def read_user_with_photos(user_id: int, db: Session = Depends(connect.get_db)):
+    user = crud.get_user(db, user_id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.user_picture = base64.b64encode(user.user_picture).decode('utf-8') if user.user_picture else ""
+    
+    photos = crud.get_user_photos(db, user_id=user_id)
+    for photo in photos:
+        photo.photo_data = base64.b64encode(photo.photo_data).decode('utf-8')
+    
+    return {
+        "user": user,
+        "photos": photos
+    }

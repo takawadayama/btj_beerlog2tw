@@ -1,9 +1,8 @@
-from sqlalchemy import create_engine, Integer, String, Text, LargeBinary, Date, DateTime, Boolean, Float, Numeric, ForeignKey
+from sqlalchemy import create_engine, Integer, String, Text, LargeBinary, Date, DateTime, Boolean, Float, Numeric, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.orm import declarative_base, relationship, mapped_column, Mapped
 from datetime import datetime, date
 
 Base = declarative_base()
-
 
 class User(Base):
     __tablename__ = "users"
@@ -11,15 +10,14 @@ class User(Base):
     user_name: Mapped[str] = mapped_column(String(50), nullable=False)
     user_mail: Mapped[str] = mapped_column(String(255), nullable=False)
     user_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    user_picture: Mapped[bytes] = mapped_column(LargeBinary)
+    user_picture: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     user_profile: Mapped[str] = mapped_column(Text)
     birthdate: Mapped[date] = mapped_column(Date)
-    gender: Mapped[str] = mapped_column(String(50))
+    gender: Mapped[int] = mapped_column(Integer)
     posts = relationship("Post", back_populates="users")
     favorites = relationship("Favorite", back_populates="users")
     preferences = relationship("Preference", back_populates="users")
     purchases = relationship("Purchase", back_populates="users")
-
 
 class Post(Base):
     __tablename__ = "posts"
@@ -32,14 +30,12 @@ class Post(Base):
     photos = relationship("Photo", back_populates="posts")
     stores = relationship("Store", back_populates="posts")
 
-
 class Photo(Base):
     __tablename__ = "photos"
     photo_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey('posts.post_id'))
-    photo_data: Mapped[bytes] = mapped_column(LargeBinary)
+    photo_data: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     posts = relationship("Post", back_populates="photos")
-
 
 class Store(Base):
     __tablename__ = "stores"
@@ -52,12 +48,11 @@ class Store(Base):
     brand_id: Mapped[int] = mapped_column(Integer, ForeignKey('brands.brand_id'))
     posts = relationship("Post", back_populates="stores")
 
-
 class Brand(Base):
     __tablename__ = "brands"
     brand_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     brand_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    brand_picture: Mapped[bytes] = mapped_column(LargeBinary)
+    brand_picture: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     category: Mapped[str] = mapped_column(String(50))
     manufacturer_id: Mapped[int] = mapped_column(Integer, ForeignKey('manufacturers.manufacturer_id'))
     manufacturers = relationship("Manufacturer", back_populates="brands")
@@ -66,13 +61,11 @@ class Brand(Base):
     survey_raw_datas = relationship("SurveyRawData", back_populates="brands")
     ec_brands = relationship("EC_Brand", back_populates="brands")
 
-
 class Manufacturer(Base):
     __tablename__ = "manufacturers"
     manufacturer_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     manufacturer_name: Mapped[str] = mapped_column(String(255), nullable=False)
     brands = relationship("Brand", back_populates="manufacturers")
-
 
 class Favorite(Base):
     __tablename__ = "favorites"
@@ -82,7 +75,6 @@ class Favorite(Base):
     users = relationship("User", back_populates="favorites")
     brands = relationship("Brand", back_populates="favorites")
 
-
 class Preference(Base):
     __tablename__ = "preferences"
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.user_id'), primary_key=True)
@@ -90,7 +82,6 @@ class Preference(Base):
     score: Mapped[float] = mapped_column(Float)
     users = relationship("User", back_populates="preferences")
     items = relationship("Item", back_populates="preferences")
-
 
 class Item(Base):
     __tablename__ = "items"
@@ -100,7 +91,6 @@ class Item(Base):
     surveys = relationship("Survey", back_populates="items")
     survey_raw_datas = relationship("SurveyRawData", back_populates="items")
 
-
 class Survey(Base):
     __tablename__ = "surveys"
     survey_id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -109,11 +99,14 @@ class Survey(Base):
     score: Mapped[float] = mapped_column(Float)
     age_lower_limit: Mapped[int] = mapped_column(Integer)
     age_upper_limit: Mapped[int] = mapped_column(Integer)
-    gender: Mapped[str] = mapped_column(String(50))
+    gender: Mapped[int] = mapped_column(Integer)
     response_count: Mapped[int] = mapped_column(Integer)
     brands = relationship("Brand", back_populates="surveys")
     items = relationship("Item", back_populates="surveys")
 
+    __table_args__ = (
+        PrimaryKeyConstraint('survey_id', 'item_id'),
+    )
 
 class SurveyRawData(Base):
     __tablename__ = "survey_raw_datas"
@@ -127,19 +120,20 @@ class SurveyRawData(Base):
     brands = relationship("Brand", back_populates="survey_raw_datas")
     items = relationship("Item", back_populates="survey_raw_datas")
 
-
+    __table_args__ = (
+        PrimaryKeyConstraint('raw_data_id', 'item_id'),
+    )
 class EC_Brand(Base):
     __tablename__ = "ec_brands"
     ec_brand_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     brand_id: Mapped[int] = mapped_column(Integer, ForeignKey('brands.brand_id'))
     category: Mapped[str] = mapped_column(String(50))
     name: Mapped[str] = mapped_column(String(255))
-    picture: Mapped[bytes] = mapped_column(LargeBinary)
+    picture: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     description: Mapped[str] = mapped_column(Text)
     price: Mapped[int] = mapped_column(Integer)
     brands = relationship("Brand", back_populates="ec_brands")
     purchase_details = relationship("PurchaseDetail", back_populates="ec_brands")
-
 
 class Purchase(Base):
     __tablename__ = "purchases"
@@ -152,10 +146,10 @@ class Purchase(Base):
     users = relationship("User", back_populates="purchases")
     purchase_details = relationship("PurchaseDetail", back_populates="purchases")
 
-
 class PurchaseDetail(Base):
     __tablename__ = "purchase_details"
     purchase_id: Mapped[int] = mapped_column(Integer, ForeignKey("purchases.purchase_id"), primary_key=True)
+    ec_set_id: Mapped[int] = mapped_column(Integer, ForeignKey("ec_sets.ec_set_id"))
     detail_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     ec_brand_id: Mapped[int] = mapped_column(Integer, ForeignKey('ec_brands.ec_brand_id'))
     category: Mapped[str] = mapped_column(String(50))
@@ -163,24 +157,33 @@ class PurchaseDetail(Base):
     price: Mapped[int] = mapped_column(Integer)
     ec_brands = relationship("EC_Brand", back_populates="purchase_details")
     purchases = relationship("Purchase", back_populates="purchase_details")
+    ec_sets = relationship("EC_Set", back_populates="purchase_details")
 
 
 class EC_Set(Base):
     __tablename__ = "ec_sets"
     ec_set_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    category: Mapped[str] = mapped_column(String(50), primary_key=True)
     set_name: Mapped[str] = mapped_column(String(255))
     set_description: Mapped[str] = mapped_column(Text)
-    num_of_cans: Mapped[int] = mapped_column(Integer)
-    national_cans: Mapped[int] = mapped_column(Integer)
-    craft_cans: Mapped[int] = mapped_column(Integer)
-    national_algorithm_id: Mapped[int] = mapped_column(Integer, ForeignKey("algorithms.algorithm_id"))
-    craft_algorithm_id: Mapped[int] = mapped_column(Integer, ForeignKey("algorithms.algorithm_id"))
-    algorithms = relationship("Algorithm", back_populates="ec_sets")
-
-
-class Algorithm(Base):
-    __tablename__ = "algorithms"
-    algorithm_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     algorithm_func: Mapped[str] = mapped_column(String(255))
-    description: Mapped[str] = mapped_column(Text)
-    ec_sets = relationship("EC_Set", back_populates="algorithms")
+    purchase_details = relationship("PurchaseDetail", back_populates="ec_sets")
+    # num_of_cans: Mapped[int] = mapped_column(Integer)
+    # national_cans: Mapped[int] = mapped_column(Integer)
+    # craft_cans: Mapped[int] = mapped_column(Integer)
+    # national_algorithm_id: Mapped[int] = mapped_column(Integer, ForeignKey("algorithms.algorithm_id"))
+    # craft_algorithm_id: Mapped[int] = mapped_column(Integer, ForeignKey("algorithms.algorithm_id"))
+    # national_algorithm = relationship("Algorithm", foreign_keys=[national_algorithm_id], back_populates="ec_sets_national")
+    # craft_algorithm = relationship("Algorithm", foreign_keys=[craft_algorithm_id], back_populates="ec_sets_craft")
+
+    __table_args__ = (
+        PrimaryKeyConstraint('ec_set_id', 'category'),
+    )
+
+# class Algorithm(Base):
+#     __tablename__ = "algorithms"
+#     algorithm_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     algorithm_func: Mapped[str] = mapped_column(String(255))
+#     description: Mapped[str] = mapped_column(Text)
+#     ec_sets_national = relationship("EC_Set", foreign_keys="[EC_Set.national_algorithm_id]", back_populates="national_algorithm")
+#     ec_sets_craft = relationship("EC_Set", foreign_keys="[EC_Set.craft_algorithm_id]", back_populates="craft_algorithm")

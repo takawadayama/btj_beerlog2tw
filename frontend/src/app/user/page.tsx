@@ -1,6 +1,8 @@
 "use client";
+
 import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
+import Navbar from './Navbar'; // Navbarコンポーネントのインポート
 
 interface User {
   user_id: number;
@@ -72,54 +74,57 @@ export default function UserPage() {
   };
 
   return (
-    <div className="p-4 lg:px-32">
-      {/* ログイン機能実装後に削除 */}
-      <div className="mb-4 p-4 border border-red-500 rounded">
-        <p className="text-red-500 font-bold mb-2">ログイン機能実装後に削除</p>
-        <form onSubmit={handleSubmit} className="mb-4">
-          <label className="block mb-2">
-            Enter User ID:
-            <input
-              type="number"
-              value={userId !== null ? userId : ''}
-              onChange={(e) => setUserId(parseInt(e.target.value))}
-              className="border p-2 rounded w-full"
-            />
-          </label>
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded">Fetch User</button>
-        </form>
-      </div>
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {userWithPhotos && (
-        <div className="bg-white shadow rounded p-4">
-          <div className="flex items-center mb-4">
-            <img
-              src={`data:image/jpeg;base64,${userWithPhotos.user.user_picture}`}
-              alt="User Picture"
-              className="rounded-full w-32 h-32 object-cover"
-            />
-            <div className="ml-4">
-              <h2 className="text-xl font-bold">{userWithPhotos.user.user_name}</h2>
-              <p>{userWithPhotos.user.user_profile}</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Recent Posts</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {userWithPhotos.photos.map(photo => (
-                <div key={photo.photo_id} className="relative group">
-                  <img
-                    src={`data:image/jpeg;base64,${photo.photo_data}`}
-                    alt={`Post ${photo.photo_id}`}
-                    className="w-full h-64 object-cover rounded-md transition-transform duration-300 ease-in-out transform group-hover:scale-105"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="bg-gray-50 min-h-screen pt-20">
+      <Navbar /> {/* Navbarコンポーネントの表示 */}
+      <div className="p-4 lg:px-60">
+        {/* ログイン機能実装後に削除 */}
+        <div className="mb-4 p-4 border bg-red-200 border-red-500 rounded">
+          <p className="text-red-500 font-bold mb-2">ログイン機能実装後に削除</p>
+          <form onSubmit={handleSubmit} className="mb-4">
+            <label className="block mb-2">
+              Enter User ID:
+              <input
+                type="number"
+                value={userId !== null ? userId : ''}
+                onChange={(e) => setUserId(parseInt(e.target.value))}
+                className="border p-2 rounded w-full"
+              />
+            </label>
+            <button type="submit" className="bg-blue-500 text-white p-2 rounded">Fetch User</button>
+          </form>
         </div>
-      )}
+        {loading && <p>Loading...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+        {userWithPhotos && (
+          <div className="bg-gray-50 rounded p-4">
+            <div className="flex items-center bg-gray-200 rounded-3xl py-10 px-4 mb-10">
+              <img
+                src={`data:image/jpeg;base64,${userWithPhotos.user.user_picture}`}
+                alt="User Picture"
+                className="rounded-full w-52 h-52 object-cover"
+              />
+              <div className="ml-4">
+                <h2 className="text-xl font-bold">{userWithPhotos.user.user_name}</h2>
+                <p>{userWithPhotos.user.user_profile}</p>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold mb-2">最近の投稿</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+                {userWithPhotos.photos.map(photo => (
+                  <div key={photo.photo_id} className="relative group">
+                    <img
+                      src={`data:image/jpeg;base64,${photo.photo_data}`}
+                      alt={`Post ${photo.photo_id}`}
+                      className="w-full h-64 object-cover rounded-2xl transition-transform duration-300 ease-in-out transform group-hover:scale-105"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

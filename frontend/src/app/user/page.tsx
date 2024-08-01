@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
 import Navbar from './Navbar'; // Navbarコンポーネントのインポート
+import ProfileContainer from './ProfileContainer'; // ProfileContainerコンポーネントのインポート
+import PhotosContainer from './PhotosContainer'; // PhotosContainerコンポーネントのインポート
 
 interface User {
   user_id: number;
@@ -96,33 +98,10 @@ export default function UserPage() {
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-500">{error}</p>}
         {userWithPhotos && (
-          <div className="bg-gray-50 rounded p-4">
-            <div className="flex items-center bg-gray-200 rounded-3xl py-10 px-4 mb-10">
-              <img
-                src={`data:image/jpeg;base64,${userWithPhotos.user.user_picture}`}
-                alt="User Picture"
-                className="rounded-full w-52 h-52 object-cover"
-              />
-              <div className="ml-4">
-                <h2 className="text-xl font-bold">{userWithPhotos.user.user_name}</h2>
-                <p>{userWithPhotos.user.user_profile}</p>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold mb-2">最近の投稿</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-                {userWithPhotos.photos.map(photo => (
-                  <div key={photo.photo_id} className="relative group">
-                    <img
-                      src={`data:image/jpeg;base64,${photo.photo_data}`}
-                      alt={`Post ${photo.photo_id}`}
-                      className="w-full h-64 object-cover rounded-2xl transition-transform duration-300 ease-in-out transform group-hover:scale-105"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <>
+            <ProfileContainer user={userWithPhotos.user} />
+            <PhotosContainer photos={userWithPhotos.photos} />
+          </>
         )}
       </div>
     </div>

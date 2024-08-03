@@ -54,3 +54,24 @@ def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
 #         raise HTTPException(status_code=404, detail="EC set not found")
 
 #     return updated_ec_set
+
+
+@app.get("/recommend", response_model=List[schemas.RecommendResponseItem])
+def recommend(params: schemas.RecommendQueryParams = Depends()):
+    ec_set_id = params.ec_set_id
+    category = params.category
+    cans = params.cans
+    kinds = params.kinds
+    ng_id = params.ng_id
+
+    # ロジックをここに追加
+    # 例: 推奨事項の計算やデータベースクエリ
+
+    # クエリパラメータを使用してロジックを実装
+    # ここではダミーデータを返す
+    response_data = [
+        {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": 12},
+        {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": 6},
+    ]
+
+    return response_data

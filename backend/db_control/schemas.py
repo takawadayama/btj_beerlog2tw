@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class UserBase(BaseModel):
@@ -44,3 +44,19 @@ class ECSetItem(BaseModel):
 #     set_name: str
 #     set_description: str
 #     algorithm_func: str
+
+
+class RecommendQueryParams(BaseModel):
+    ec_set_id: int
+    category: str
+    cans: int
+    kinds: int
+    ng_id: Optional[List[int]] = None
+
+
+class RecommendResponseItem(BaseModel):
+    ec_brand_id: int
+    name: str
+    description: str
+    price: int
+    count: int

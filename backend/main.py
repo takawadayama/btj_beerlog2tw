@@ -69,9 +69,18 @@ def recommend(params: schemas.RecommendQueryParams = Depends()):
 
     # クエリパラメータを使用してロジックを実装
     # ここではダミーデータを返す
-    response_data = [
-        {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": 12},
-        {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": 6},
-    ]
+
+    if category == "national":
+        response_data = [
+            {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": params.cans / 2},
+            {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": params.cans / 2},
+        ]
+
+    elif category == "craft":
+        response_data = [
+            {"ec_brand_id": 3, "name": "Brand C", "description": "Description C", "price": 100, "count": params.cans / 3},
+            {"ec_brand_id": 4, "name": "Brand D", "description": "Description D", "price": 200, "count": params.cans / 3},
+            {"ec_brand_id": 5, "name": "Brand E", "description": "Description E", "price": 200, "count": params.cans / 3},
+        ]
 
     return response_data

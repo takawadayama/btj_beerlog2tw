@@ -4,9 +4,7 @@ import { RecommendQueryParams, RecommendResponseItem } from "../../types/purchas
 
 const API_URL = "http://127.0.0.1:8000"; // FastAPIサーバーのURLを指定
 
-export const getRecommendations = async (
-  params: RecommendQueryParams
-): Promise<RecommendResponseItem[]> => {
+export const getRecommendations = async (params: RecommendQueryParams): Promise<RecommendResponseItem[]> => {
   try {
     const response = await axios.get<RecommendResponseItem[]>(`${API_URL}/recommend`, {
       params: params,

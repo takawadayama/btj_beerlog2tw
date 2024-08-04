@@ -51,7 +51,7 @@ class RecommendQueryParams(BaseModel):
     category: str
     cans: int
     kinds: int
-    ng_id: Optional[List[int]] = None
+    ng_id: List[int] = []
 
 
 class RecommendResponseItem(BaseModel):

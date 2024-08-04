@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from db_control import crud, connect, schemas
+from db_control import crud, connect, schemas, recommend_func
 import base64
 from typing import List
 
@@ -57,30 +57,54 @@ def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
 
 
 @app.get("/recommend", response_model=List[schemas.RecommendResponseItem])
-def recommend(params: schemas.RecommendQueryParams = Depends()):
+def recommend(params: schemas.RecommendQueryParams = Depends(), db: Session = Depends(connect.get_db)):
     ec_set_id = params.ec_set_id
     category = params.category
     cans = params.cans
     kinds = params.kinds
     ng_id = params.ng_id
 
-    # ロジックをここに追加
-    # 例: 推奨事項の計算やデータベースクエリ
+    # 最終的にはJWTから取得する
+    user_id = 1
 
-    # クエリパラメータを使用してロジックを実装
-    # ここではダミーデータを返す
+    if ec_set_id == 2:
 
-    if category == "national":
-        response_data = [
-            {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": params.cans / 2},
-            {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": params.cans / 2},
-        ]
+        # ec_set_idとアルゴリズムの対応を、一旦、直に書いておく
+        # マッピングはうまく行かない
+        # 関数のマッピング
+        # function_mapping = {
+        #     # "recommend_popular_products": recommend_popular_products,  # 未実装
+        #     "recommend_preferred_products": recommend.recommend_preferred_products,
+        #     # "recommend_diverse_preferred_products": recommend_diverse_preferred_products,  # 未実装
+        # }
 
-    elif category == "craft":
-        response_data = [
-            {"ec_brand_id": 3, "name": "Brand C", "description": "Description C", "price": 100, "count": params.cans / 3},
-            {"ec_brand_id": 4, "name": "Brand D", "description": "Description D", "price": 200, "count": params.cans / 3},
-            {"ec_brand_id": 5, "name": "Brand E", "description": "Description E", "price": 200, "count": params.cans / 3},
-        ]
+        # algorithm_function = function_mapping.get("recommend_preferred_products")
+        # response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        print(ng_id)
+        print(params)
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        response_data = recommend_func.recommend_preferred_products(user_id, category, cans, kinds, ng_id, db)
+
+    else:
+
+        # ロジックをここに追加
+        # 例: 推奨事項の計算やデータベースクエリ
+
+        # クエリパラメータを使用してロジックを実装
+        # ここではダミーデータを返す
+
+        if category == "national":
+            response_data = [
+                {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": params.cans / 2},
+                {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": params.cans / 2},
+            ]
+
+        elif category == "craft":
+            response_data = [
+                {"ec_brand_id": 3, "name": "Brand C", "description": "Description C", "price": 100, "count": params.cans / 3},
+                {"ec_brand_id": 4, "name": "Brand D", "description": "Description D", "price": 200, "count": params.cans / 3},
+                {"ec_brand_id": 5, "name": "Brand E", "description": "Description E", "price": 200, "count": params.cans / 3},
+            ]
 
     return response_data

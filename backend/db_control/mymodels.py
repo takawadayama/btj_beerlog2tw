@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Integer, String, Text, LargeBinary, Date, DateTime, Boolean, Float, Numeric, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import create_engine, Integer, String, Text, LargeBinary, Date, DateTime, Boolean, Float, Numeric, ForeignKey, PrimaryKeyConstraint, Column
 from sqlalchemy.orm import declarative_base, relationship, mapped_column, Mapped
 from datetime import datetime, date
+from pydantic import BaseModel
 
 Base = declarative_base()
 
@@ -18,6 +19,16 @@ class User(Base):
     favorites = relationship("Favorite", back_populates="users")
     preferences = relationship("Preference", back_populates="users")
     purchases = relationship("Purchase", back_populates="users")
+
+class UserModel(BaseModel):
+    user_id: int
+    user_name: str
+    user_mail: str
+    user_password: str
+    user_picture: str
+    user_profile: str
+    birthdate: str
+    gender: str
 
 class Post(Base):
     __tablename__ = "posts"

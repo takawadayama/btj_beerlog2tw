@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas
+from db_control.token import router as token_router
 import base64
 
 app = FastAPI()
@@ -18,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(token_router, prefix="/token")
 
 @app.get("/user_with_photos", response_model=schemas.UserWithPhotos)
 def read_user_with_photos(user_id: int, db: Session = Depends(connect.get_db)):

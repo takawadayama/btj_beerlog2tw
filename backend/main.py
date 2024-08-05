@@ -20,7 +20,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(token_router, prefix="/token")
+app.include_router(token_router)
+
 
 @app.get("/user_with_photos", response_model=schemas.UserWithPhotos)
 def read_user_with_photos(user_id: int, db: Session = Depends(connect.get_db)):
@@ -28,12 +29,9 @@ def read_user_with_photos(user_id: int, db: Session = Depends(connect.get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     user.user_picture = base64.b64encode(user.user_picture).decode('utf-8') if user.user_picture else ""
-    
+
     photos = crud.get_user_photos(db, user_id=user_id)
     for photo in photos:
         photo.photo_data = base64.b64encode(photo.photo_data).decode('utf-8')
-    
-    return {
-        "user": user,
-        "photos": photos
-    }
+
+    return {"user": user, "photos": photos}

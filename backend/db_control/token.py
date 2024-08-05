@@ -11,10 +11,8 @@ from dotenv import load_dotenv
 import os
 from typing import Annotated
 from sqlalchemy.orm import mapped_column, Mapped
-from .database import get_db
-from .models import User
-from .schemas import Token
-from .utils import verify_password, create_access_token
+
+
 
 # .env の読み込み
 load_dotenv()

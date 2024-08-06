@@ -136,3 +136,14 @@ class UserWithAgeGender(BaseModel):
 
 class PurchaseDate(BaseModel):
     purchase_date: date
+
+
+# パスワード更新のためのリクエストモデル
+class UpdatePasswordRequest(BaseModel):
+    user_id: int
+    new_password: str
+
+
+class LoginRequest(BaseModel):
+    user_mail: str
+    user_password: str

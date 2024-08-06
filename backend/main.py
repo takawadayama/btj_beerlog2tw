@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas, recommend_func
 from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
+from db_control.token import router as token_router
 import base64
 from typing import List
 from datetime import datetime, date
 import uuid
 
 app = FastAPI()
+
+app.include_router(token_router)  # ログイン関係
 
 # CORS設定
 origins = [

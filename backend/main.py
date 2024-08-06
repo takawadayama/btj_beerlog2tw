@@ -2,9 +2,11 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas
-from db_control.mymodels import Item, Brand, Preference, Favorite
+from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
 import base64
 from typing import List
+from datetime import datetime, date
+import uuid
 
 app = FastAPI()
 
@@ -20,6 +22,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def calculate_age(birthdate: date) -> int:
+    today = date.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
+@app.get("/user/{user_id}", response_model=schemas.UserWithAgeGender)
+def read_user(user_id: int, db: Session = Depends(connect.get_db)):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    age = calculate_age(user.birthdate)
+    return {"age": age, "gender": user.gender}
 
 @app.get("/user_with_photos", response_model=schemas.UserWithPhotos)
 def read_user_with_photos(user_id: int, db: Session = Depends(connect.get_db)):
@@ -86,3 +100,71 @@ def delete_favorite(user_id: int = Query(...), brand_id: int = Query(...), db: S
     db.delete(favorite)
     db.commit()
     return {"message": "Favorite deleted successfully"}
+
+# New Endpoint to get brand information by purchase_id
+@app.get("/purchase/{purchase_id}/brands", response_model=List[schemas.Brand])
+def get_brands_by_purchase_id(purchase_id: int, db: Session = Depends(connect.get_db)):
+    purchase_details = db.query(PurchaseDetail).filter(PurchaseDetail.purchase_id == purchase_id).all()
+    if not purchase_details:
+        raise HTTPException(status_code=404, detail="Purchase details not found")
+    
+    brand_ids = set()
+    for detail in purchase_details:
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == detail.ec_brand_id).first()
+        if ec_brand:
+            brand_ids.add(ec_brand.brand_id)
+    
+    brands = db.query(Brand).filter(Brand.brand_id.in_(brand_ids)).all()
+    if not brands:
+        raise HTTPException(status_code=404, detail="Brands not found")
+    
+    return brands
+
+# New Endpoint to get purchase date by purchase_id
+@app.get("/purchase/{purchase_id}/date", response_model=schemas.PurchaseDate)
+def get_purchase_date(purchase_id: int, db: Session = Depends(connect.get_db)):
+    purchase = db.query(Purchase).filter(Purchase.purchase_id == purchase_id).first()
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    return {"purchase_date": purchase.date_time.date()}
+
+# New Survey Endpoint
+@app.post("/survey/{purchase_id}")
+async def submit_survey(purchase_id: int, survey: schemas.SurveySubmission, db: Session = Depends(connect.get_db)):
+    try:
+        # 現在の最大raw_data_idを取得
+        max_raw_data_id = db.query(SurveyRawData.raw_data_id).order_by(SurveyRawData.raw_data_id.desc()).first()
+        if max_raw_data_id is None:
+            max_raw_data_id = 0
+        else:
+            max_raw_data_id = max_raw_data_id[0]
+
+        # 新しいraw_data_idを生成
+        new_raw_data_id = max_raw_data_id + 1
+
+        # アンケート回答をDBに格納
+        for response in survey.responses:
+            survey_raw_data = SurveyRawData(
+                raw_data_id=new_raw_data_id,  # 生成したraw_data_idを使用
+                item_id=response.item_id,
+                brand_id=survey.brand_id,
+                score=response.score,
+                age=survey.age,
+                gender=survey.gender,
+                purchase_date=datetime.strptime(survey.purchase_date, '%Y-%m-%d').date()
+            )
+            db.add(survey_raw_data)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error saving survey data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving survey data: {str(e)}")
+    return {"message": "Survey submitted successfully"}
+
+# New Endpoint to get item information
+@app.get("/items", response_model=List[schemas.Item])
+async def get_items(db: Session = Depends(connect.get_db)):
+    items = db.query(Item).all()
+    if not items:
+        raise HTTPException(status_code=404, detail="Items not found")
+    return items

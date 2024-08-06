@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
+from datetime import date
 
 class UserBase(BaseModel):
     user_name: str
@@ -71,3 +72,28 @@ class UserFavorites(BaseModel):
 
     class Config:
         orm_mode = True
+
+class Survey(BaseModel):
+    taste: str
+    packaging: str
+    overall: str
+    comments: Optional[str] = None
+
+class SurveyResponse(BaseModel):
+    item_id: int
+    score: float
+
+class SurveySubmission(BaseModel):
+    purchase_id: int
+    brand_id: int
+    age: int
+    gender: int
+    purchase_date: str
+    responses: List[SurveyResponse]
+
+class UserWithAgeGender(BaseModel):
+    age: int
+    gender: int
+
+class PurchaseDate(BaseModel):
+    purchase_date: date

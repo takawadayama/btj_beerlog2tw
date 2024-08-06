@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Dict, Optional
+from datetime import date
 
 
 class UserBase(BaseModel):
@@ -16,7 +17,7 @@ class User(UserBase):
     user_id: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Photo(BaseModel):
@@ -24,7 +25,7 @@ class Photo(BaseModel):
     photo_data: str
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class UserWithPhotos(BaseModel):
@@ -36,14 +37,6 @@ class ECSetItem(BaseModel):
     ec_set_id: int
     set_name: str
     set_description: str
-
-
-# ec_setsの内容を更新するための暫定的なもの
-# class ECSetUpdate(BaseModel):
-#     category: str
-#     set_name: str
-#     set_description: str
-#     algorithm_func: str
 
 
 class RecommendQueryParams(BaseModel):
@@ -60,3 +53,86 @@ class RecommendResponseItem(BaseModel):
     description: str
     price: int
     count: int
+
+
+class Brand(BaseModel):
+    brand_id: int
+    brand_name: str
+
+    class Config:
+        orm_mode = True
+
+
+class Item(BaseModel):
+    item_id: int
+    item_name: str
+
+    class Config:
+        orm_mode = True
+
+
+class Preference(BaseModel):
+    user_id: int
+    item_id: int
+    score: float
+    item: Item
+
+    class Config:
+        orm_mode = True
+
+
+class UserPreferences(BaseModel):
+    preferences: List[Preference]
+
+    class Config:
+        orm_mode = True
+
+
+class UpdatePreferencesRequest(BaseModel):
+    user_id: int
+    preferences: Dict[int, float]
+
+
+class FavoriteCreate(BaseModel):
+    user_id: int
+    brand_name: str
+
+    class Config:
+        orm_mode = True
+
+
+class UserFavorites(BaseModel):
+    favorites: List[Brand]
+
+    class Config:
+        orm_mode = True
+
+
+class Survey(BaseModel):
+    taste: str
+    packaging: str
+    overall: str
+    comments: Optional[str] = None
+
+
+class SurveyResponse(BaseModel):
+    item_id: int
+    score: float
+
+
+class SurveySubmission(BaseModel):
+    purchase_id: int
+    brand_id: int
+    age: int
+    gender: int
+    purchase_date: str
+    responses: List[SurveyResponse]
+
+
+class UserWithAgeGender(BaseModel):
+    age: int
+    gender: int
+
+
+class PurchaseDate(BaseModel):
+    purchase_date: date

@@ -2,8 +2,11 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas, recommend_func
+from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
 import base64
 from typing import List
+from datetime import datetime, date
+import uuid
 
 app = FastAPI()
 
@@ -19,6 +22,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def calculate_age(birthdate: date) -> int:
+    today = date.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
+
+@app.get("/user/{user_id}", response_model=schemas.UserWithAgeGender)
+def read_user(user_id: int, db: Session = Depends(connect.get_db)):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    age = calculate_age(user.birthdate)
+    return {"age": age, "gender": user.gender}
 
 
 @app.get("/user_with_photos", response_model=schemas.UserWithPhotos)
@@ -43,17 +60,6 @@ def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
     ec_sets = crud.get_ec_sets_by_category(db, category)
 
     return ec_sets
-
-
-# ec_setsを更新するための暫定的なもの
-# @app.put("/ec_sets/{ec_set_id}", response_model=schemas.ECSetUpdate)
-# def update_ec_set_endpoint(ec_set_id: int, ec_set_data: schemas.ECSetUpdate, db: Session = Depends(connect.get_db)):
-#     updated_ec_set = crud.update_ec_set(db, ec_set_id, ec_set_data.category, ec_set_data.set_name, ec_set_data.set_description, ec_set_data.algorithm_func)
-
-#     if updated_ec_set is None:
-#         raise HTTPException(status_code=404, detail="EC set not found")
-
-#     return updated_ec_set
 
 
 @app.get("/recommend", response_model=List[schemas.RecommendResponseItem])

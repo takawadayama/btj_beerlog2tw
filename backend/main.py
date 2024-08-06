@@ -185,7 +185,7 @@ async def get_items(db: Session = Depends(connect.get_db)):
 
 @app.get("/ec_sets", response_model=List[schemas.ECSetItem])
 def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
-    ec_sets = crud.get_ec_sets_by_category(db, category)
+    ec_sets = recommend_func.get_ec_sets_by_category(db, category)
 
     return ec_sets
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
+import { useRouter } from "next/navigation";
 
 import { ECSetItem, RecommendResponseItem, nationalCraftOptions } from "../../types/purchase_types";
 
@@ -18,6 +19,8 @@ export default function Home() {
     national: number;
     craft: number;
   }>(nationalCraftOptions[24][0]);
+
+  const router = useRouter();
 
   const fetchData = async (category: string) => {
     try {
@@ -39,7 +42,7 @@ export default function Home() {
         category,
         cans,
         kinds: 2,
-        ng_id: [4, 5],
+        ng_id: [1, 6],
       });
       if (category === "national") {
         setNationalRecommendations(data);
@@ -62,8 +65,33 @@ export default function Home() {
     setNationalCraftRatio(nationalCraftOptions[totalCans][0]);
   }, [totalCans]);
 
+  const handleMyRedirect = () => {
+    router.push("/user");
+  };
+
+  const handleLogout = () => {
+    // ログアウト処理を実装する
+    localStorage.removeItem("token"); // JWTをローカルストレージから削除
+    router.push("/"); //メイン画面へ戻る
+  };
+
   return (
     <div className="container mx-auto p-4 bg-gray-100">
+      <div className="flex justify-end space-x-4 mb-4">
+        <button
+          onClick={handleMyRedirect}
+          className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200"
+        >
+          マイページ
+        </button>
+        <button
+          onClick={handleLogout}
+          className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200"
+        >
+          ログアウト
+        </button>
+      </div>
+
       <h1 className="text-2xl font-bold mb-4">条件選択</h1>
       <div className="mb-4">
         <div className="mb-4">

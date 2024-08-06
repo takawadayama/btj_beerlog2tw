@@ -8,6 +8,7 @@ export const getRecommendations = async (params: RecommendQueryParams): Promise<
   try {
     const response = await axios.get<RecommendResponseItem[]>(`${API_URL}/recommend`, {
       params: params,
+      paramsSerializer: { indexes: null }, //リスト渡す時に、[]が付かない通常の繰り返し形式にするのに必要
     });
     return response.data;
   } catch (error) {

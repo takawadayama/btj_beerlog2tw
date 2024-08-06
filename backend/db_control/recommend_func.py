@@ -2,10 +2,23 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 
-from .mymodels import Survey, Brand, Preference, User, EC_Brand
+from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
 
 from scipy.spatial.distance import cosine
 from datetime import date, datetime
+
+
+# セット情報の取得
+def get_ec_sets_by_category(db: Session, category: str):
+    return (
+        db.query(
+            EC_Set.ec_set_id,
+            EC_Set.set_name,
+            EC_Set.set_description,
+        )
+        .filter(EC_Set.category == category)
+        .all()
+    )
 
 
 # 1.製品に関するベクトル情報を取得する

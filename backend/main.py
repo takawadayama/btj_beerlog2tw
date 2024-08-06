@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas, recommend_func
@@ -57,7 +57,18 @@ def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
 
 
 @app.get("/recommend", response_model=List[schemas.RecommendResponseItem])
-def recommend(params: schemas.RecommendQueryParams = Depends(), db: Session = Depends(connect.get_db)):
+def recommend(
+    ec_set_id: int = Query(...),
+    category: str = Query(...),
+    cans: int = Query(...),
+    kinds: int = Query(...),
+    ng_id: List[int] = Query([]),  # Pydanticのモデルではリストをうまく受け取れなったのでQueryを使う
+    db: Session = Depends(connect.get_db),
+):
+    # 検証用にPydanticのモデルへ入れておく
+    params = schemas.RecommendQueryParams(ec_set_id=ec_set_id, category=category, cans=cans, kinds=kinds, ng_id=ng_id)
+
+    # 改めてパラメータを置き直す
     ec_set_id = params.ec_set_id
     category = params.category
     cans = params.cans
@@ -80,10 +91,7 @@ def recommend(params: schemas.RecommendQueryParams = Depends(), db: Session = De
 
         # algorithm_function = function_mapping.get("recommend_preferred_products")
         # response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
-        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-        print(ng_id)
-        print(params)
-        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
         response_data = recommend_func.recommend_preferred_products(user_id, category, cans, kinds, ng_id, db)
 
     else:

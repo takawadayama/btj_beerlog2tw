@@ -39,7 +39,7 @@ export default function Home() {
         category,
         cans,
         kinds: 2,
-        ng_id: [4, 5],
+        ng_id: [1, 6],
       });
       if (category === "national") {
         setNationalRecommendations(data);

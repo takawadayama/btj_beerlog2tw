@@ -117,21 +117,23 @@ async def read_users_me(current_user_id: int = Depends(get_current_user_id)):
 
 
 # パスワードの更新エンドポイント
-@router.put("/update_password/")
-def update_user_password(request: UpdatePasswordRequest, db: Session = Depends(get_db)):
+# ユーザーの新規登録を行う場合には再利用するかもしれないのでコメントアウトだけしておく
+# @router.put("/update_password/")
+# def update_user_password(request: UpdatePasswordRequest, db: Session = Depends(get_db)):
 
-    user = db.query(User).filter(User.user_id == request.user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+#     user = db.query(User).filter(User.user_id == request.user_id).first()
+#     if user is None:
+#         raise HTTPException(status_code=404, detail="User not found")
 
-    # 新しいパスワードをハッシュ化
-    hashed_password = get_password_hash(request.new_password)
+#     # 新しいパスワードをハッシュ化
+#     hashed_password = get_password_hash(request.new_password)
 
-    user.user_password = hashed_password
-    db.commit()
-    return {"message": "Password updated successfully"}
+#     user.user_password = hashed_password
+#     db.commit()
+#     return {"message": "Password updated successfully"}
 
 
+# ログイン認証を行う例
 @router.get("/test_jwt/")
 def get_test_jwt(user_id: int = Depends(get_current_user_id)):
     return user_id

@@ -39,3 +39,27 @@ export const nationalCraftOptions: Record<number, NationalCraftOption[]> = {
     { national: 24, craft: 0 },
   ],
 };
+
+export interface PurchaseItem {
+  ec_brand_id: number;
+  category: string;
+  name: string;
+  price: number;
+  count: number;
+  ec_set_id: number;
+}
+
+export interface PurchaseSubSetItem {
+  cans: number;
+  set_name: string;
+  details: PurchaseItem[];
+}
+
+export interface PurchaseSetItem {
+  setDetails: {
+    cans: number;
+    set_num: number;
+  };
+  national_set: PurchaseSubSetItem;
+  craft_set: PurchaseSubSetItem;
+}

@@ -3,8 +3,16 @@ import { useState, useEffect } from "react";
 import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
+import { convertToPurchaseItem } from "./puchaseDetailConverter";
 
-import { ECSetItem, RecommendResponseItem, nationalCraftOptions } from "../../types/purchase_types";
+import {
+  ECSetItem,
+  RecommendResponseItem,
+  nationalCraftOptions,
+  PurchaseItem,
+  PurchaseSubSetItem,
+  PurchaseSetItem,
+} from "../../types/purchase_types";
 
 export default function Home() {
   const [nationalEcSets, setNationalEcSets] = useState<ECSetItem[]>([]);
@@ -19,6 +27,21 @@ export default function Home() {
     national: number;
     craft: number;
   }>(nationalCraftOptions[24][0]);
+
+  const [nationalSet, setNationalSet] = useState<{ cans: number; set_name: string; set_id: number }>({
+    cans: 0,
+    set_name: "",
+    set_id: 0,
+  });
+  const [craftSet, setCraftSet] = useState<{ cans: number; set_name: string; set_id: number }>({
+    cans: 0,
+    set_name: "",
+    set_id: 0,
+  });
+  const [nationalSetDetails, setNationalSetDetails] = useState<PurchaseItem[]>([]);
+  const [craftSetDetails, setCraftSetDetails] = useState<PurchaseItem[]>([]);
+
+  const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
 
   const router = useRouter();
 
@@ -35,7 +58,8 @@ export default function Home() {
     }
   };
 
-  const fetchRecommendations = async (ec_set_id: number, category: string, cans: number) => {
+  // おススメセットを選択した時の処理
+  const fetchRecommendations = async (set_name: string, ec_set_id: number, category: string, cans: number) => {
     try {
       const data = await getRecommendations({
         ec_set_id,
@@ -45,9 +69,11 @@ export default function Home() {
         ng_id: [1, 6],
       });
       if (category === "national") {
+        setNationalSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
         setNationalRecommendations(data);
         setIsNationalSelected(true);
       } else if (category === "craft") {
+        setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
         setCraftRecommendations(data);
         setIsCraftSelected(true);
       }
@@ -55,6 +81,25 @@ export default function Home() {
       console.error("Failed to fetch recommendations:", error);
     }
   };
+
+  // リコメンド結果を購入候補の変数へ格納する
+  useEffect(() => {
+    const convertNationalRecommendation = (recommendItem: RecommendResponseItem) => {
+      return convertToPurchaseItem("national", nationalSet.set_id, recommendItem);
+    };
+    // 変換を実行
+    const data: PurchaseItem[] = nationalRecommendations.map(convertNationalRecommendation);
+    setNationalSetDetails(data);
+  }, [nationalRecommendations]);
+
+  useEffect(() => {
+    const convertCraftRecommendation = (recommendItem: RecommendResponseItem) => {
+      return convertToPurchaseItem("craft", craftSet.set_id, recommendItem);
+    };
+    // 変換を実行
+    const data: PurchaseItem[] = craftRecommendations.map(convertCraftRecommendation);
+    setCraftSetDetails(data);
+  }, [craftRecommendations]);
 
   useEffect(() => {
     fetchData("national");
@@ -73,6 +118,127 @@ export default function Home() {
     // ログアウト処理を実装する
     localStorage.removeItem("token"); // JWTをローカルストレージから削除
     router.push("/"); //メイン画面へ戻る
+  };
+
+  const handleAddToCart = () => {
+    const combinedCans = nationalSet.cans + craftSet.cans;
+
+    if (combinedCans === totalCans) {
+      const newPurchaseSetItem: PurchaseSetItem = {
+        setDetails: {
+          cans: combinedCans,
+          set_num: 1, // デフォルトで1セット購入（後で増減可能にする）
+        },
+        national_set: {
+          cans: nationalSet.cans,
+          set_name: nationalSet.set_name,
+          details: nationalSetDetails,
+        },
+        craft_set: {
+          cans: craftSet.cans,
+          set_name: craftSet.set_name,
+          details: craftSetDetails,
+        },
+      };
+
+      setPurchaseSetItemAll((prevItems) => [...prevItems, newPurchaseSetItem]);
+    } else {
+      if (isNationalSelected && !isCraftSelected) {
+        alert("クラフトブランドを選択してください");
+      } else if (!isNationalSelected && isCraftSelected) {
+        alert("ナショナルブランドを選択してください");
+      } else if (!isNationalSelected && !isCraftSelected) {
+        alert("クラフトブランドとナショナルブランドを選択してください");
+      }
+    }
+  };
+
+  const handleBackToNationalSetSelection = () => {
+    // nationalSetとnationalSetDetailsの初期化
+    setNationalSet({ cans: 0, set_name: "", set_id: 0 });
+    setNationalSetDetails([]);
+    setIsNationalSelected(false);
+  };
+
+  const handleBackToCraftSetSelection = () => {
+    // nationalSetとnationalSetDetailsの初期化
+    setCraftSet({ cans: 0, set_name: "", set_id: 0 });
+    setCraftSetDetails([]);
+    setIsCraftSelected(false);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setPurchaseSetItemAll((prevItems) => prevItems.filter((_, i) => i !== index));
+  };
+
+  const handleIncrementSetNumber = (index: number) => {
+    setPurchaseSetItemAll((prevItems) =>
+      prevItems.map((item, i) => {
+        if (i === index) {
+          const newSetNum = item.setDetails.set_num + 1;
+          return {
+            ...item,
+            setDetails: {
+              ...item.setDetails,
+              cans: (item.setDetails.cans / item.setDetails.set_num) * newSetNum,
+              set_num: newSetNum,
+            },
+            national_set: {
+              ...item.national_set,
+              cans: (item.national_set.cans / item.setDetails.set_num) * newSetNum,
+              details: item.national_set.details.map((detail) => ({
+                ...detail,
+                count: (detail.count / item.setDetails.set_num) * newSetNum,
+              })),
+            },
+            craft_set: {
+              ...item.craft_set,
+              cans: (item.craft_set.cans / item.setDetails.set_num) * newSetNum,
+              details: item.craft_set.details.map((detail) => ({
+                ...detail,
+                count: (detail.count / item.setDetails.set_num) * newSetNum,
+              })),
+            },
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleDecrementSetNumber = (index: number) => {
+    setPurchaseSetItemAll((prevItems) =>
+      prevItems.map((item, i) => {
+        if (i === index && item.setDetails.set_num > 1) {
+          const newSetNum = item.setDetails.set_num - 1;
+          return {
+            ...item,
+            setDetails: {
+              ...item.setDetails,
+              cans: (item.setDetails.cans / item.setDetails.set_num) * newSetNum,
+              set_num: newSetNum,
+            },
+            national_set: {
+              ...item.national_set,
+              cans: (item.national_set.cans / item.setDetails.set_num) * newSetNum,
+              details: item.national_set.details.map((detail) => ({
+                ...detail,
+                count: (detail.count / item.setDetails.set_num) * newSetNum,
+              })),
+            },
+            craft_set: {
+              ...item.craft_set,
+              cans: (item.craft_set.cans / item.setDetails.set_num) * newSetNum,
+              details: item.craft_set.details.map((detail) => ({
+                ...detail,
+                count: (detail.count / item.setDetails.set_num) * newSetNum,
+              })),
+            },
+          };
+        }
+        return item;
+      })
+    );
   };
 
   return (
@@ -137,7 +303,7 @@ export default function Home() {
           <div className="overflow-y-auto h-64 bg-white rounded-lg shadow-md p-4">
             {isNationalSelected ? (
               <div>
-                <button className="btn btn-outline mb-4" onClick={() => setIsNationalSelected(false)}>
+                <button className="btn btn-outline mb-4" onClick={handleBackToNationalSetSelection}>
                   セット選択に戻る
                 </button>
                 {nationalRecommendations.map((item) => (
@@ -170,7 +336,9 @@ export default function Home() {
                     <div className="ml-4">
                       <button
                         className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700"
-                        onClick={() => fetchRecommendations(ecSet.ec_set_id, "national", nationalCraftRatio.national)}
+                        onClick={() =>
+                          fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "national", nationalCraftRatio.national)
+                        }
                       >
                         これを選択する
                       </button>
@@ -186,7 +354,7 @@ export default function Home() {
           <div className="overflow-y-auto h-64 bg-white rounded-lg shadow-md p-4">
             {isCraftSelected ? (
               <div>
-                <button className="btn btn-outline mb-4" onClick={() => setIsCraftSelected(false)}>
+                <button className="btn btn-outline mb-4" onClick={handleBackToCraftSetSelection}>
                   セット選択に戻る
                 </button>
                 {craftRecommendations.map((item) => (
@@ -219,7 +387,9 @@ export default function Home() {
                     <div className="ml-4">
                       <button
                         className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700"
-                        onClick={() => fetchRecommendations(ecSet.ec_set_id, "craft", nationalCraftRatio.craft)}
+                        onClick={() =>
+                          fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "craft", nationalCraftRatio.craft)
+                        }
                       >
                         これを選択する
                       </button>
@@ -229,6 +399,78 @@ export default function Home() {
               ))
             )}
           </div>
+        </div>
+      </div>
+      {/* 購入ボタン */}
+      <button onClick={handleAddToCart} className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
+        買い物かごに入れる
+      </button>
+      {/* purchaseSetItemAllの表示 */}
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Purchase Set Items</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {purchaseSetItemAll.map((item, index) => (
+            <div key={index} className="card w-full bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title">Set {index + 1}</h2>
+                <p>
+                  <span className="font-bold">Cans:</span> {item.setDetails.cans}
+                </p>
+                <p>
+                  <span className="font-bold">Set Number:</span> {item.setDetails.set_num}
+                </p>
+                <div className="flex space-x-2 mb-2">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => handleDecrementSetNumber(index)}
+                    disabled={item.setDetails.set_num <= 1}
+                  >
+                    -
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => handleIncrementSetNumber(index)}>
+                    +
+                  </button>
+                </div>
+                <button className="btn btn-error" onClick={() => handleRemoveItem(index)}>
+                  削除
+                </button>
+                <div className="divider"></div>
+                <div>
+                  <h3 className="text-lg font-semibold">National Set</h3>
+                  <p>
+                    <span className="font-bold">Set Name:</span> {item.national_set.set_name}
+                  </p>
+                  <p>
+                    <span className="font-bold">Cans:</span> {item.national_set.cans}
+                  </p>
+                  <ul className="list-disc ml-5">
+                    {item.national_set.details.map((detail, i) => (
+                      <li key={i}>
+                        {detail.name} - {detail.category} - {detail.price}円 - {detail.count} 本
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="divider"></div>
+                <div>
+                  <h3 className="text-lg font-semibold">Craft Set</h3>
+                  <p>
+                    <span className="font-bold">Set Name:</span> {item.craft_set.set_name}
+                  </p>
+                  <p>
+                    <span className="font-bold">Cans:</span> {item.craft_set.cans}
+                  </p>
+                  <ul className="list-disc ml-5">
+                    {item.craft_set.details.map((detail, i) => (
+                      <li key={i}>
+                        {detail.name} - {detail.category} - {detail.price}円 - {detail.count} 本
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

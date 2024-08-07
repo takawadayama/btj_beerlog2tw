@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from db_control import crud, connect, schemas, recommend_func
+from db_control import crud, connect, schemas
 from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
 from db_control.token import router as token_router
+from db_control.recommend import router as recommend_router
 import base64
 from typing import List
 from datetime import datetime, date
@@ -12,6 +13,7 @@ import uuid
 app = FastAPI()
 
 app.include_router(token_router)  # ログイン関係
+app.include_router(recommend_router)  # リコメンド関係
 
 # CORS設定
 origins = [
@@ -181,72 +183,3 @@ async def get_items(db: Session = Depends(connect.get_db)):
     if not items:
         raise HTTPException(status_code=404, detail="Items not found")
     return items
-
-
-@app.get("/ec_sets", response_model=List[schemas.ECSetItem])
-def get_ec_sets(category: str, db: Session = Depends(connect.get_db)):
-    ec_sets = recommend_func.get_ec_sets_by_category(db, category)
-
-    return ec_sets
-
-
-@app.get("/recommend", response_model=List[schemas.RecommendResponseItem])
-def recommend(
-    ec_set_id: int = Query(...),
-    category: str = Query(...),
-    cans: int = Query(...),
-    kinds: int = Query(...),
-    ng_id: List[int] = Query([]),  # Pydanticのモデルではリストをうまく受け取れなったのでQueryを使う
-    db: Session = Depends(connect.get_db),
-):
-    # 検証用にPydanticのモデルへ入れておく
-    params = schemas.RecommendQueryParams(ec_set_id=ec_set_id, category=category, cans=cans, kinds=kinds, ng_id=ng_id)
-
-    # 改めてパラメータを置き直す
-    ec_set_id = params.ec_set_id
-    category = params.category
-    cans = params.cans
-    kinds = params.kinds
-    ng_id = params.ng_id
-
-    # 最終的にはJWTから取得する
-    user_id = 1
-
-    if ec_set_id == 2:
-
-        # ec_set_idとアルゴリズムの対応を、一旦、直に書いておく
-        # マッピングはうまく行かない
-        # 関数のマッピング
-        # function_mapping = {
-        #     # "recommend_popular_products": recommend_popular_products,  # 未実装
-        #     "recommend_preferred_products": recommend.recommend_preferred_products,
-        #     # "recommend_diverse_preferred_products": recommend_diverse_preferred_products,  # 未実装
-        # }
-
-        # algorithm_function = function_mapping.get("recommend_preferred_products")
-        # response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
-
-        response_data = recommend_func.recommend_preferred_products(user_id, category, cans, kinds, ng_id, db)
-
-    else:
-
-        # ロジックをここに追加
-        # 例: 推奨事項の計算やデータベースクエリ
-
-        # クエリパラメータを使用してロジックを実装
-        # ここではダミーデータを返す
-
-        if category == "national":
-            response_data = [
-                {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": params.cans / 2},
-                {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": params.cans / 2},
-            ]
-
-        elif category == "craft":
-            response_data = [
-                {"ec_brand_id": 3, "name": "Brand C", "description": "Description C", "price": 100, "count": params.cans / 3},
-                {"ec_brand_id": 4, "name": "Brand D", "description": "Description D", "price": 200, "count": params.cans / 3},
-                {"ec_brand_id": 5, "name": "Brand E", "description": "Description E", "price": 200, "count": params.cans / 3},
-            ]
-
-    return response_data

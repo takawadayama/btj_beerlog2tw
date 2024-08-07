@@ -76,11 +76,11 @@ export default function UserPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen pt-20">
+    <div className="bg-gray-50 min-h-screen pt-20 mt-5">
       <Navbar /> {/* Navbarコンポーネントの表示 */}
       <div className="p-4 lg:px-60">
         {/* ログイン機能実装後に削除 */}
-        <div className="mb-4 p-4 border bg-red-200 border-red-500 rounded">
+        {/* <div className="mb-4 p-4 border bg-red-200 border-red-500 rounded">
           <p className="text-red-500 font-bold mb-2">ログイン機能実装後に削除</p>
           <form onSubmit={handleSubmit} className="mb-4">
             <label className="block mb-2">
@@ -94,7 +94,7 @@ export default function UserPage() {
             </label>
             <button type="submit" className="bg-blue-500 text-white p-2 rounded">Fetch User</button>
           </form>
-        </div>
+        </div> */}
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-500">{error}</p>}
         {userWithPhotos && (

@@ -186,7 +186,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                       ))}
                     </ul>
                   )}
-                  <button onClick={handleFavoriteSubmit} className="bg-amber-600 text-white py-2 px-4 rounded mt-2">
+                  <button onClick={handleFavoriteSubmit} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
                     追加する
                   </button>
                 </>
@@ -237,7 +237,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
       <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: 'auto' }}>
         <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
         <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
-          <button type="submit" className="bg-amber-600 text-white py-2 px-4 rounded mt-2" style={{ position: 'absolute', bottom: '1px', right: '10px' }}>
+          <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: 'absolute', bottom: '1px', right: '10px' }}>
             更新
           </button>
         </form>

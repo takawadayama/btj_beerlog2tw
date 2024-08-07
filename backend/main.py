@@ -184,7 +184,6 @@ async def get_items(db: Session = Depends(connect.get_db)):
         raise HTTPException(status_code=404, detail="Items not found")
     return items
 
-
 # New Endpoint to get average scores for a brand
 @app.get("/brand/{brand_id}/average_scores", response_model=Dict[int, float])
 async def get_brand_average_scores(brand_id: int, db: Session = Depends(connect.get_db)):
@@ -209,3 +208,4 @@ def complete_survey(purchase_id: int, db: Session = Depends(connect.get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error completing survey: {str(e)}")
     return {"message": "Survey completed"}
+

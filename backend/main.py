@@ -1,14 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from db_control import crud, connect, schemas
+from sqlalchemy import func
 from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
 from db_control.token import router as token_router
 from db_control.recommend import router as recommend_router
 import base64
-from typing import List
+from typing import List, Dict, Optional
 from datetime import datetime, date
-import uuid
 
 app = FastAPI()
 
@@ -183,3 +183,29 @@ async def get_items(db: Session = Depends(connect.get_db)):
     if not items:
         raise HTTPException(status_code=404, detail="Items not found")
     return items
+
+
+# New Endpoint to get average scores for a brand
+@app.get("/brand/{brand_id}/average_scores", response_model=Dict[int, float])
+async def get_brand_average_scores(brand_id: int, db: Session = Depends(connect.get_db)):
+    average_scores = db.query(SurveyRawData.item_id, func.avg(SurveyRawData.score).label('average_score')).filter(SurveyRawData.brand_id == brand_id).group_by(SurveyRawData.item_id).all()
+    return {item_id: avg_score for item_id, avg_score in average_scores}
+
+
+@app.get("/brands/{brand_id}/logo")
+def get_brand_logo(brand_id: int, db: Session = Depends(connect.get_db)):
+    brand = db.query(Brand).filter(Brand.brand_id == brand_id).first()
+    if not brand or not brand.brand_picture:
+        raise HTTPException(status_code=404, detail="Brand logo not found")
+    return Response(content=brand.brand_picture, media_type="image/png")
+
+
+@app.post("/purchase/{purchase_id}/complete")
+def complete_survey(purchase_id: int, db: Session = Depends(connect.get_db)):
+    try:
+        db.query(Purchase).filter(Purchase.purchase_id == purchase_id).update({Purchase.survey_completion: 1})
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error completing survey: {str(e)}")
+    return {"message": "Survey completed"}

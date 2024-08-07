@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 
 const Navbar = () => {
   const handleAboutRedirect = () => {
@@ -17,12 +18,10 @@ const Navbar = () => {
     // ダミー
   };
 
-  const handleMyRedirect = () => {
-    // ダミー
-  };
-
   const handleLogout = () => {
-    // ログアウトロジック要追加
+    // ログアウトロジック
+    localStorage.removeItem('token'); // JWTをローカルストレージから削除
+    window.location.href = '/'; // メイン画面へ戻る
   };
 
   return (
@@ -35,7 +34,9 @@ const Navbar = () => {
           <button onClick={handlePickupPubRedirect} className="font-sans text-gray-800 py-2 px-4 rounded-xl hover:text-white hover:bg-amber-600 focus:outline-none transition-colors duration-200">ピックアップ居酒屋</button>
         </div>
         <div className="flex space-x-4 mr-20">
-          <button onClick={handleMyRedirect} className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">新規投稿</button>
+          <Link href="/user" legacyBehavior>
+            <a className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">新規投稿</a>
+          </Link>
           <button onClick={handleLogout} className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">ログアウト</button>
         </div>
       </div>

@@ -139,7 +139,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pr-10">
+    <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-10">
       {/* 左 */}
       <div className="bg-gray-200 p-4 rounded flex flex-col items-center col-span-1" style={{ height: 'auto' }}>
         <div className="flex items-start w-full mb-4">

@@ -246,10 +246,15 @@ export default function Home() {
     );
   };
 
+  // 合計金額の受け取った後の処理は改めて考える
   const handlePurchaseItemAll = async () => {
     try {
       const data = await createPurchase(purchaseSetItemAll, jwt);
-      console.log("Transaction Response:", data);
+      // アラートを表示
+      alert("合計金額は" + data.total_amount + "円です");
+
+      // /userページへ遷移
+      router.push("/user");
     } catch (error) {
       console.error("Error creating purchase:", error);
     }

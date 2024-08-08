@@ -23,10 +23,14 @@ def create_purchase(purchase: List[PurchaseSetItem], db: Session = Depends(get_d
     try:
         total_amount = 0
 
+        # print("Starting transaction processing...")
+
+        # print(f"Received purchase data: {purchase}")
+
         # 取引テーブルへ登録
         transaction = Purchase(
             user_id=user_id,
-            datetime=datetime.now(),
+            date_time=datetime.now(),
             total_amount=0,
             total_cans=sum(item.setDetails.cans for item in purchase),
             survey_completion=False,
@@ -77,6 +81,7 @@ def create_purchase(purchase: List[PurchaseSetItem], db: Session = Depends(get_d
 
     except Exception as e:
         db.rollback()
+        # print(f"Error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()

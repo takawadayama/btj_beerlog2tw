@@ -6,7 +6,7 @@ from sqlalchemy import func
 from db_control.mymodels import Item, Brand, Preference, Favorite, SurveyRawData, User, PurchaseDetail, EC_Brand, Purchase
 from db_control.token import router as token_router
 from db_control.recommend import router as recommend_router
-from db_control.recommend import router as purchase_router
+from db_control.purchase import router as purchase_router
 import base64
 from typing import List, Dict, Optional
 from datetime import datetime, date

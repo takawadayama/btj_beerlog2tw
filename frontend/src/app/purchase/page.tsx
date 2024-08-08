@@ -4,6 +4,7 @@ import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
 import { convertToPurchaseItem } from "./puchaseDetailConverter";
+import { createPurchase } from "./createPurchase";
 
 import {
   ECSetItem,
@@ -42,6 +43,7 @@ export default function Home() {
   const [craftSetDetails, setCraftSetDetails] = useState<PurchaseItem[]>([]);
 
   const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
+  const [jwt, setJwt] = useState<string>("");
 
   const router = useRouter();
 
@@ -104,6 +106,9 @@ export default function Home() {
   useEffect(() => {
     fetchData("national");
     fetchData("craft");
+    //トークン情報を取得
+    const token = localStorage.getItem("token") as string;
+    setJwt(token);
   }, []);
 
   useEffect(() => {
@@ -239,6 +244,15 @@ export default function Home() {
         return item;
       })
     );
+  };
+
+  const handlePurchaseItemAll = async () => {
+    try {
+      const data = await createPurchase(purchaseSetItemAll, jwt);
+      console.log("Transaction Response:", data);
+    } catch (error) {
+      console.error("Error creating purchase:", error);
+    }
   };
 
   return (
@@ -425,6 +439,9 @@ export default function Home() {
       {/* 購入ボタン */}
       <button onClick={handleAddToCart} className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
         買い物かごに入れる
+      </button>
+      <button onClick={handlePurchaseItemAll} className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
+        購入する
       </button>
       {/* purchaseSetItemAllの表示 */}
       <div className="container mx-auto p-4">

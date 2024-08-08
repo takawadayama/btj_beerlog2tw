@@ -147,3 +147,33 @@ class UpdatePasswordRequest(BaseModel):
 class LoginRequest(BaseModel):
     user_mail: str
     user_password: str
+
+
+class PurchaseItem(BaseModel):
+    ec_brand_id: int
+    category: str
+    name: str
+    price: int
+    count: int
+    ec_set_id: int
+
+
+class PurchaseSubSetItem(BaseModel):
+    cans: int
+    set_name: str
+    details: List[PurchaseItem]
+
+
+class SetDetails(BaseModel):
+    cans: int
+    set_num: int
+
+
+class PurchaseSetItem(BaseModel):
+    setDetails: SetDetails
+    national_set: PurchaseSubSetItem
+    craft_set: PurchaseSubSetItem
+
+
+class TransactionResponse(BaseModel):
+    total_amount: int

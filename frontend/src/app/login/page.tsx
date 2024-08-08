@@ -13,13 +13,11 @@ const Login = () => {
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     return hashHex;
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
@@ -59,9 +57,7 @@ const Login = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-6 font-sans">
         <div className="max-w-md w-full">
           <div className="text-center mb-2">
-            <h2 className="text-left text-l font-extrabold text-gray-600 mt-6">
-              SNSアカウントでログイン
-            </h2>
+            <h2 className="text-left text-l font-extrabold text-gray-600 mt-6">SNSアカウントでログイン</h2>
             <div className="flex flex-col space-y-4 mt-2">
               <button className="group relative w-full flex items-center py-2 px-4 border border-transparent rounded-md text-white bg-gray-700 hover:bg-gray-900 focus:outline-none">
                 <img src="/x.png" alt="X" className="h-5 w-5 ml-4 mr-2" />
@@ -72,20 +68,12 @@ const Login = () => {
                 <span className="flex-grow text-center">LINEでログイン</span>
               </button>
               <button className="group relative w-full flex items-center py-2 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                <img
-                  src="/fb.png"
-                  alt="Facebook"
-                  className="h-6 w-6 ml-4 mr-2"
-                />
-                <span className="flex-grow text-center">
-                  Facebookでログイン
-                </span>
+                <img src="/fb.png" alt="Facebook" className="h-6 w-6 ml-4 mr-2" />
+                <span className="flex-grow text-center">Facebookでログイン</span>
               </button>
             </div>
           </div>
-          <h2 className="text-left text-l font-extrabold text-gray-600 mt-10 mb-0">
-            メールアドレスでログイン
-          </h2>
+          <h2 className="text-left text-l font-extrabold text-gray-600 mt-10 mb-0">メールアドレスでログイン</h2>
           <form className="space-y-2" onSubmit={handleLogin}>
             <input type="hidden" name="remember" value="true" />
             <div className="rounded-md shadow-sm -space-y-px">

@@ -32,11 +32,11 @@ export const nationalCraftOptions: Record<number, NationalCraftOption[]> = {
     { national: 12, craft: 0 },
   ],
   24: [
-    { national: 0, craft: 24 },
-    { national: 6, craft: 18 },
-    { national: 12, craft: 12 },
-    { national: 18, craft: 6 },
     { national: 24, craft: 0 },
+    { national: 18, craft: 6 },
+    { national: 12, craft: 12 },
+    { national: 6, craft: 18 },
+    { national: 0, craft: 24 },
   ],
 };
 

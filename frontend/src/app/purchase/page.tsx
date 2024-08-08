@@ -26,7 +26,7 @@ export default function Home() {
   const [nationalCraftRatio, setNationalCraftRatio] = useState<{
     national: number;
     craft: number;
-  }>(nationalCraftOptions[24][0]);
+  }>(nationalCraftOptions[24][1]);
 
   const [nationalSet, setNationalSet] = useState<{ cans: number; set_name: string; set_id: number }>({
     cans: 0,
@@ -107,7 +107,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setNationalCraftRatio(nationalCraftOptions[totalCans][0]);
+    setNationalCraftRatio(nationalCraftOptions[totalCans][1]);
   }, [totalCans]);
 
   const handleMyRedirect = () => {
@@ -143,9 +143,9 @@ export default function Home() {
 
       setPurchaseSetItemAll((prevItems) => [...prevItems, newPurchaseSetItem]);
     } else {
-      if (isNationalSelected && !isCraftSelected) {
+      if ((isNationalSelected || nationalCraftRatio.national === 0) && !isCraftSelected) {
         alert("クラフトブランドを選択してください");
-      } else if (!isNationalSelected && isCraftSelected) {
+      } else if (!isNationalSelected && (isCraftSelected || nationalCraftRatio.craft === 0)) {
         alert("ナショナルブランドを選択してください");
       } else if (!isNationalSelected && !isCraftSelected) {
         alert("クラフトブランドとナショナルブランドを選択してください");
@@ -266,6 +266,10 @@ export default function Home() {
             value={totalCans}
             onChange={(e) => {
               setTotalCans(Number(e.target.value));
+              setNationalSet({ cans: 0, set_name: "", set_id: 0 });
+              setNationalSetDetails([]);
+              setCraftSet({ cans: 0, set_name: "", set_id: 0 });
+              setCraftSetDetails([]);
               setIsNationalSelected(false);
               setIsCraftSelected(false);
             }}
@@ -283,12 +287,17 @@ export default function Home() {
           <select
             value={JSON.stringify(nationalCraftRatio)}
             onChange={(e) => {
-              setNationalCraftRatio(JSON.parse(e.target.value));
+              setNationalCraftRatio(JSON.parse(e.target.value)); //選択した文字列をjson形式に変換して格納
+              setNationalSet({ cans: 0, set_name: "", set_id: 0 });
+              setNationalSetDetails([]);
+              setCraftSet({ cans: 0, set_name: "", set_id: 0 });
+              setCraftSetDetails([]);
               setIsNationalSelected(false);
               setIsCraftSelected(false);
             }}
             className="select select-bordered w-full"
           >
+            {/* デフォルトで表示される値をリストの３番目に変更 */}
             {nationalCraftOptions[totalCans].map((option, index) => (
               <option key={index} value={JSON.stringify(option)}>
                 {option.national}:{option.craft}
@@ -333,12 +342,18 @@ export default function Home() {
                       <h3 className="card-title text-sm font-semibold">{ecSet.set_name}</h3>
                       <p className="text-xs">{ecSet.set_description}</p>
                     </div>
+                    {/* 本数が0本の時の時にはボタンを押せなくする */}
                     <div className="ml-4">
                       <button
-                        className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700"
+                        className={`py-2 px-4 rounded ${
+                          nationalCraftRatio.national === 0
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-amber-600 hover:bg-amber-700 text-white"
+                        }`}
                         onClick={() =>
                           fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "national", nationalCraftRatio.national)
                         }
+                        disabled={nationalCraftRatio.national === 0}
                       >
                         これを選択する
                       </button>
@@ -384,12 +399,18 @@ export default function Home() {
                       <h3 className="card-title text-sm font-semibold">{ecSet.set_name}</h3>
                       <p className="text-xs">{ecSet.set_description}</p>
                     </div>
+                    {/* 本数が0本の時の時にはボタンを押せなくする */}
                     <div className="ml-4">
                       <button
-                        className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700"
+                        className={`py-2 px-4 rounded ${
+                          nationalCraftRatio.craft === 0
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-amber-600 hover:bg-amber-700 text-white"
+                        }`}
                         onClick={() =>
                           fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "craft", nationalCraftRatio.craft)
                         }
+                        disabled={nationalCraftRatio.craft === 0}
                       >
                         これを選択する
                       </button>

@@ -15,12 +15,7 @@ export const createPurchase = async (purchaseSetItemAll: PurchaseSetItem[], jwt:
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      console.error("Server responded with status code:", error.response.status);
-      console.error("Response data:", error.response.data);
-    } else {
-      console.error("Error creating purchase:", error.message);
-    }
+    console.error("Error creating purchase:", error);
     throw error;
   }
 };

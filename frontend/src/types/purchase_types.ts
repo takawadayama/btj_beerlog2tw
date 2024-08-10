@@ -87,3 +87,8 @@ export interface Preference {
   score: number;
   item: Item;
 }
+
+export interface NgList {
+  ng_id: number;
+  ng_name: string;
+}

@@ -92,3 +92,11 @@ export interface NgList {
   ng_id: number;
   ng_name: string;
 }
+
+export interface EcBrandItem {
+  ec_brand_id: number;
+  category: string;
+  name: string;
+  description: string;
+  price: number;
+}

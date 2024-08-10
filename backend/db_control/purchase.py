@@ -2,12 +2,12 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 
-from db_control.mymodels import Purchase, PurchaseDetail
+from db_control.mymodels import Purchase, PurchaseDetail, EC_Brand, Brand
 from db_control.connect import get_db
 from db_control.token import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from db_control.schemas import PurchaseSetItem, TransactionResponse
+from db_control.schemas import PurchaseSetItem, TransactionResponse, ECSearchResult
 from typing import List
 
 # from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
@@ -87,3 +87,39 @@ def create_purchase(purchase: List[PurchaseSetItem], db: Session = Depends(get_d
         db.close()
 
     return TransactionResponse(total_amount=total_amount)
+
+
+def search_ec_brands_by_brand_name(db: Session, search_term: str):
+    # Step 1: Brandテーブルから該当するbrand_idを取得
+    brand_ids = db.query(Brand.brand_id).filter(Brand.brand_name.ilike(f'%{search_term}%')).all()
+
+    brand_ids = [brand_id[0] for brand_id in brand_ids]
+
+    if not brand_ids:
+        return []  # 検索結果がない場合は空のリストを返す
+
+    # Step 2: EC_Brandテーブルから該当するbrand_idを含む行を取得
+    ec_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(brand_ids)).all()
+
+    # Step 3: ECSearchResultに変換する
+    # responsemodelで型を指定しておけば自動で変換してくれるようだが、明示的に変換しておく
+    ec_search_results = [
+        ECSearchResult(
+            ec_brand_id=ec_brand.ec_brand_id,
+            name=ec_brand.name,
+            category=ec_brand.category,
+            description=ec_brand.description,
+            price=ec_brand.price,
+        )
+        for ec_brand in ec_brands
+    ]
+
+    return ec_search_results
+
+
+@router.get("/search_ec_brands", response_model=List[ECSearchResult])
+def search_brands(search_term: str, db: Session = Depends(get_db)):
+    brands = search_ec_brands_by_brand_name(db, search_term=search_term)
+    if not brands:
+        raise HTTPException(status_code=404, detail="Brands not found")
+    return brands

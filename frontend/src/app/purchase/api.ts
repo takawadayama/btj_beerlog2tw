@@ -1,5 +1,5 @@
 import axios from "axios";
-import { User, Brand, Preference } from "../../types/purchase_types";
+import { User, Brand, Preference, EcBrandItem } from "../../types/purchase_types";
 
 export const fetchFavorites = async (user_id: number): Promise<Brand[]> => {
   try {
@@ -71,6 +71,18 @@ export const updatePreferences = async (user_id: number, preferences: { [key: nu
     });
   } catch (error) {
     console.error("Failed to update preferences:", error);
+    throw error;
+  }
+};
+
+export const fetchEcSearchResults = async (search_term: string): Promise<EcBrandItem[]> => {
+  try {
+    const response = await axios.get<EcBrandItem[]>(`http://localhost:8000/search_ec_brands`, {
+      params: { search_term },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch search results:", error);
     throw error;
   }
 };

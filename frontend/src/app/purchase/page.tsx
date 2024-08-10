@@ -8,7 +8,9 @@ import { createPurchase } from "./createPurchase";
 import Navbar from "./Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
 
-import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList } from "../../types/purchase_types";
+import { fetchFavorites, fetchPreferences, fetchEcSearchResults, addFavorite, deleteFavorite, updatePreferences } from "./api";
+
+import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem } from "../../types/purchase_types";
 
 export default function Home() {
   const [nationalEcSets, setNationalEcSets] = useState<ECSetItem[]>([]);
@@ -47,6 +49,10 @@ export default function Home() {
   const craftKindsOptions = [1, 2, 3, 6];
 
   const [ngList, setNgList] = useState<NgList[]>([]);
+  const [newFavorite, setNewFavorite] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<EcBrandItem[]>([]);
+  const [selectedFavorite, setSelectedFavorite] = useState<EcBrandItem | null>(null);
+  const [isNewFavoriteSelected, setIsNewFavoriteSelected] = useState<boolean>(false);
 
   const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
   const [jwt, setJwt] = useState<string>("");
@@ -161,6 +167,54 @@ export default function Home() {
       }
     }
   };
+
+  const handleFavoriteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewFavorite(e.target.value);
+    setIsNewFavoriteSelected(false);
+  };
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (newFavorite.length > 0 && !isNewFavoriteSelected) {
+        try {
+          const results = await fetchEcSearchResults(newFavorite);
+          setSearchResults(results);
+        } catch (error) {
+          console.error("Failed to fetch search results:", error);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    };
+
+    fetchResults();
+  }, [newFavorite]);
+
+  const handleFavoriteSelect = (ec_brand: EcBrandItem) => {
+    setSelectedFavorite(ec_brand);
+    setNewFavorite(ec_brand.name);
+    setIsNewFavoriteSelected(true);
+    setSearchResults([]);
+  };
+
+  // const handleFavoriteSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (selectedFavorite) {
+  //     try {
+  //       selectedFavorite.brand_id
+  //       selectedFavorite.brand_name
+  //       await addFavorite(user.user_id, selectedFavorite.brand_name);
+  //       setFavorites([...favorites, selectedFavorite]);
+  //       setNewFavorite("");
+  //       setSelectedFavorite(null);
+  //       setShowInput(false);
+  //       toast.success("好みの銘柄を追加しました！");
+  //     } catch (error) {
+  //       console.error("Failed to add favorite:", error);
+  //       toast.error("銘柄の追加に失敗しました");
+  //     }
+  //   }
+  // };
 
   const handleAddToCart = () => {
     const combinedCans = nationalSet.cans + craftSet.cans;
@@ -396,6 +450,22 @@ export default function Home() {
             <p className="text-sm text-gray-500">現在、除外されている銘柄はありません。</p>
           )}
         </div>
+
+        <div>
+          {/* 自分で銘柄を選択 */}
+          <p className="text-lg font-semibold mb-2">自分で銘柄を選択する</p>
+          <p className="text-md mb-2">選択された銘柄: {selectedFavorite ? `${selectedFavorite.name} [${selectedFavorite.category}]` : ""}</p>
+          <input type="text" value={newFavorite} onChange={handleFavoriteChange} placeholder="銘柄を検索" className="border p-2 rounded w-full mt-2" />
+          {searchResults.length > 0 && (
+            <ul className="border mt-2 rounded w-full">
+              {searchResults.map((result) => (
+                <li key={result.ec_brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300">
+                  {result.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -405,6 +475,19 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   {nationalSelectedSet && <span className="text-lg font-semibold">{nationalSelectedSet.set_name}</span>}
+                  {/* 再提案ボタンの追加 */}
+                  <button
+                    className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 ml-auto"
+                    onClick={() => {
+                      if (nationalSelectedSet) {
+                        fetchRecommendations(nationalSelectedSet.set_name, nationalSelectedSet.ec_set_id, "national", nationalCraftRatio.national, nationalKinds, ngList);
+                      } else {
+                        console.error("nationalSelectedSet is undefined");
+                      }
+                    }}
+                  >
+                    再提案
+                  </button>
                   <button className="btn btn-outline ml-auto" onClick={ResetNationalSetSelection}>
                     セット選択に戻る
                   </button>
@@ -460,6 +543,19 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   {craftSelectedSet && <span className="text-lg font-semibold">{craftSelectedSet.set_name}</span>}
+                  {/* 再提案ボタンの追加 */}
+                  <button
+                    className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 ml-auto"
+                    onClick={() => {
+                      if (craftSelectedSet) {
+                        fetchRecommendations(craftSelectedSet.set_name, craftSelectedSet.ec_set_id, "craft", nationalCraftRatio.craft, craftKinds, ngList);
+                      } else {
+                        console.error("craftSelectedSet is undefined");
+                      }
+                    }}
+                  >
+                    再提案
+                  </button>
                   <button className="btn btn-outline ml-auto" onClick={ResetCraftSetSelection}>
                     セット選択に戻る
                   </button>

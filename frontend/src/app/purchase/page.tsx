@@ -197,24 +197,103 @@ export default function Home() {
     setSearchResults([]);
   };
 
-  // const handleFavoriteSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (selectedFavorite) {
-  //     try {
-  //       selectedFavorite.brand_id
-  //       selectedFavorite.brand_name
-  //       await addFavorite(user.user_id, selectedFavorite.brand_name);
-  //       setFavorites([...favorites, selectedFavorite]);
-  //       setNewFavorite("");
-  //       setSelectedFavorite(null);
-  //       setShowInput(false);
-  //       toast.success("好みの銘柄を追加しました！");
-  //     } catch (error) {
-  //       console.error("Failed to add favorite:", error);
-  //       toast.error("銘柄の追加に失敗しました");
-  //     }
-  //   }
-  // };
+  //選択したnational銘柄へ変更する処理
+  const handleUpdateNationalSelectedBrand = (ec_brand_id: number) => {
+    if (selectedFavorite?.category !== "national") {
+      alert("nationalブランドを選択してください");
+      return; // 条件が満たされない場合、処理を中断
+    }
+
+    // 既にselectedFavorite.ec_brand_idを持つアイテムが存在するかチェック
+    const alreadyExistsInRecommendations = nationalRecommendations.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
+
+    const alreadyExistsInSetDetails = nationalSetDetails.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
+
+    if (alreadyExistsInRecommendations || alreadyExistsInSetDetails) {
+      alert("この銘柄は既に選択されています。");
+      return; // 存在する場合、処理を中断
+    }
+
+    setNationalRecommendations((prevRecommendations) =>
+      prevRecommendations.map((item) =>
+        item.ec_brand_id === ec_brand_id
+          ? {
+              ...item,
+              // 必要に応じて他のプロパティも更新可能
+              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
+              name: selectedFavorite?.name || item.name,
+              price: selectedFavorite?.price || item.price,
+              description: selectedFavorite?.description || item.description,
+            }
+          : item
+      )
+    );
+
+    setNationalSetDetails((prevSetDetails) =>
+      prevSetDetails.map((item) =>
+        item.ec_brand_id === ec_brand_id
+          ? {
+              ...item,
+              // nationalSetDetailsにも同じように更新
+              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
+              name: selectedFavorite?.name || item.name,
+              price: selectedFavorite?.price || item.price,
+              ec_set_id: 999, // 自分で選択したものは999を入れる
+            }
+          : item
+      )
+    );
+    setSelectedFavorite(null);
+  };
+
+  //選択したcraft銘柄へ変更する処理
+  const handleUpdateCraftSelectedBrand = (ec_brand_id: number) => {
+    if (selectedFavorite?.category !== "craft") {
+      alert("craftブランドを選択してください");
+      return; // 条件が満たされない場合、処理を中断
+    }
+
+    // 既にselectedFavorite.ec_brand_idを持つアイテムが存在するかチェック
+    const alreadyExistsInRecommendations = craftRecommendations.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
+
+    const alreadyExistsInSetDetails = craftSetDetails.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
+
+    if (alreadyExistsInRecommendations || alreadyExistsInSetDetails) {
+      alert("この銘柄は既に選択されています。");
+      return; // 存在する場合、処理を中断
+    }
+
+    setCraftRecommendations((prevRecommendations) =>
+      prevRecommendations.map((item) =>
+        item.ec_brand_id === ec_brand_id
+          ? {
+              ...item,
+              // 必要に応じて他のプロパティも更新可能
+              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
+              name: selectedFavorite?.name || item.name,
+              price: selectedFavorite?.price || item.price,
+              description: selectedFavorite?.description || item.description,
+            }
+          : item
+      )
+    );
+
+    setCraftSetDetails((prevSetDetails) =>
+      prevSetDetails.map((item) =>
+        item.ec_brand_id === ec_brand_id
+          ? {
+              ...item,
+              // nationalSetDetailsにも同じように更新
+              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
+              name: selectedFavorite?.name || item.name,
+              price: selectedFavorite?.price || item.price,
+              ec_set_id: 999, // 自分で選択したものは999を入れる
+            }
+          : item
+      )
+    );
+    setSelectedFavorite(null);
+  };
 
   const handleAddToCart = () => {
     const combinedCans = nationalSet.cans + craftSet.cans;
@@ -500,7 +579,9 @@ export default function Home() {
                       <div className="flex items-center space-x-4">
                         <p className="text-xs">Price: {item.price}</p>
                         <p className="text-xs">Count: {item.count}</p>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">選択して変更</button>
+                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleUpdateNationalSelectedBrand(item.ec_brand_id)}>
+                          選択銘柄に変更
+                        </button>
                         <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleProposeAnotherBrand(item.ec_brand_id, item.name, "national")}>
                           別銘柄を提案
                         </button>
@@ -568,7 +649,9 @@ export default function Home() {
                       <div className="flex items-center space-x-4">
                         <p className="text-xs">Price: {item.price}</p>
                         <p className="text-xs">Count: {item.count}</p>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">選択して変更</button>
+                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleUpdateCraftSelectedBrand(item.ec_brand_id)}>
+                          選択銘柄に変更
+                        </button>
                         <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleProposeAnotherBrand(item.ec_brand_id, item.name, "craft")}>
                           別銘柄を提案
                         </button>

@@ -7,10 +7,11 @@ import { convertToPurchaseItem } from "./puchaseDetailConverter";
 import { createPurchase } from "./createPurchase";
 import Navbar from "./Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
+import { jwtDecode } from "jwt-decode";
 
 import { fetchFavorites, fetchPreferences, fetchEcSearchResults, addFavorite, deleteFavorite, updatePreferences } from "./api";
 
-import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem } from "../../types/purchase_types";
+import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem, DecodedToken } from "../../types/purchase_types";
 
 export default function Home() {
   const [nationalEcSets, setNationalEcSets] = useState<ECSetItem[]>([]);
@@ -56,13 +57,9 @@ export default function Home() {
 
   const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
   const [jwt, setJwt] = useState<string>("");
+  const [userId, setUserId] = useState<number | undefined>(undefined);
 
   const router = useRouter();
-
-  const user = {
-    user_id: 1,
-    user_name: "小西章吾",
-  };
 
   const fetchData = async (category: string) => {
     try {
@@ -91,10 +88,34 @@ export default function Home() {
       if (category === "national") {
         setNationalSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
         setNationalRecommendations(data);
+
+        // 現在の状態は無視して、dataの内容で上書きする
+        const updatedDetails = data.map((item) => ({
+          ...item,
+          ec_brand_id: item.ec_brand_id,
+          category: "national",
+          name: item.name,
+          price: item.price,
+          ec_set_id: ec_set_id,
+        }));
+        setNationalSetDetails(updatedDetails);
+
         setIsNationalSelected(true);
       } else if (category === "craft") {
         setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
         setCraftRecommendations(data);
+
+        // 現在の状態は無視して、dataの内容で上書きする
+        const updatedDetails = data.map((item) => ({
+          ...item,
+          ec_brand_id: item.ec_brand_id,
+          category: "craft",
+          name: item.name,
+          price: item.price,
+          ec_set_id: ec_set_id,
+        }));
+        setCraftSetDetails(updatedDetails);
+
         setIsCraftSelected(true);
       }
     } catch (error) {
@@ -102,24 +123,14 @@ export default function Home() {
     }
   };
 
-  // リコメンド結果を購入候補の変数へ格納する
   useEffect(() => {
-    const convertNationalRecommendation = (recommendItem: RecommendResponseItem) => {
-      return convertToPurchaseItem("national", nationalSet.set_id, recommendItem);
-    };
-    // 変換を実行
-    const data: PurchaseItem[] = nationalRecommendations.map(convertNationalRecommendation);
-    setNationalSetDetails(data);
-  }, [nationalRecommendations]);
+    console.log("selectedFavorite:", selectedFavorite);
 
-  useEffect(() => {
-    const convertCraftRecommendation = (recommendItem: RecommendResponseItem) => {
-      return convertToPurchaseItem("craft", craftSet.set_id, recommendItem);
-    };
-    // 変換を実行
-    const data: PurchaseItem[] = craftRecommendations.map(convertCraftRecommendation);
-    setCraftSetDetails(data);
-  }, [craftRecommendations]);
+    console.log("nationalRecommendations:", JSON.stringify(nationalRecommendations, null, 2));
+    console.log("nationalSetDetails:", JSON.stringify(nationalSetDetails, null, 2));
+
+    console.log("purchaseSetItemAll[0]?.national_set:", JSON.stringify(purchaseSetItemAll[0]?.national_set, null, 2));
+  }, [selectedFavorite, nationalRecommendations, purchaseSetItemAll]);
 
   useEffect(() => {
     fetchData("national");
@@ -127,6 +138,8 @@ export default function Home() {
     //トークン情報を取得
     const token = localStorage.getItem("token") as string;
     setJwt(token);
+    const decodedToken = jwtDecode<DecodedToken>(token);
+    setUserId(Number(decodedToken.sub));
   }, []);
 
   useEffect(() => {
@@ -238,7 +251,7 @@ export default function Home() {
               ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
               name: selectedFavorite?.name || item.name,
               price: selectedFavorite?.price || item.price,
-              ec_set_id: 999, // 自分で選択したものは999を入れる
+              ec_set_id: 998, // 自分で選択したものは999を入れる
             }
           : item
       )
@@ -433,120 +446,130 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-4 bg-gray-100">
+    <div className="container mx-auto p-4 bg-gray-100 min-h-screen pt-20 mt-5">
       <Navbar /> {/* Navbarコンポーネントの表示 */}
-      <ProfileContainer user={user} /> {/* ここに追加します */}
-      <h1 className="text-2xl font-bold mb-4">条件選択</h1>
-      <div className="mb-4">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">全体の本数</label>
-          <select
-            value={totalCans}
-            onChange={(e) => {
-              setTotalCans(Number(e.target.value));
-              ResetNationalSetSelection();
-              ResetCraftSetSelection();
-            }}
-            className="select select-bordered w-full"
-          >
-            {Object.keys(nationalCraftOptions).map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">ナショナル本数とクラフト本数</label>
-          <select
-            value={JSON.stringify(nationalCraftRatio)}
-            onChange={(e) => {
-              setNationalCraftRatio(JSON.parse(e.target.value)); //選択した文字列をjson形式に変換して格納
-              ResetNationalSetSelection();
-              ResetCraftSetSelection();
-            }}
-            className="select select-bordered w-full"
-          >
-            {/* デフォルトで表示される値をリストの３番目に変更 */}
-            {nationalCraftOptions[totalCans].map((option, index) => (
-              <option key={index} value={JSON.stringify(option)}>
-                {option.national}:{option.craft}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">ナショナルの種類数</label>
-          <select
-            value={nationalKinds}
-            onChange={(e) => {
-              setNationalKinds(Number(e.target.value));
-              ResetNationalSetSelection();
-            }}
-            className="select select-bordered w-full"
-          >
-            {nationalKindsOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">クラフトの種類数</label>
-          <select
-            value={craftKinds}
-            onChange={(e) => {
-              setCraftKinds(Number(e.target.value));
-              ResetCraftSetSelection();
-            }}
-            className="select select-bordered w-full"
-          >
-            {craftKindsOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ngListの内容を表示 */}
-        <div className="mt-4">
-          <h2 className="text-xl font-bold mb-2">除外銘柄リスト</h2>
-          {ngList.length > 0 ? (
-            <ul className="list-disc ml-5">
-              {ngList.map((item, index) => (
-                <li key={index} className="text-sm flex justify-between items-center">
-                  {item.ng_name}
-                  <button className="ml-4 bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600" onClick={() => handleRemoveNgItem(index)}>
-                    削除
-                  </button>
-                </li>
+      <div className="bg-gray-200 rounded p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10 pt-10 pr-10">
+        {/* 左 */}
+        <div className="card bg-white shadow-md rounded-lg p-4 mb-4">
+          <h1 className="text-2xl font-bold mb-4">条件選択</h1>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">全体の本数</label>
+            <select
+              value={totalCans}
+              onChange={(e) => {
+                setTotalCans(Number(e.target.value));
+                ResetNationalSetSelection();
+                ResetCraftSetSelection();
+              }}
+              className="select select-bordered w-full"
+            >
+              {Object.keys(nationalCraftOptions).map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
               ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">現在、除外されている銘柄はありません。</p>
-          )}
-        </div>
+            </select>
+          </div>
 
-        <div>
-          {/* 自分で銘柄を選択 */}
-          <p className="text-lg font-semibold mb-2">自分で銘柄を選択する</p>
-          <p className="text-md mb-2">選択された銘柄: {selectedFavorite ? `${selectedFavorite.name} [${selectedFavorite.category}]` : ""}</p>
-          <input type="text" value={newFavorite} onChange={handleFavoriteChange} placeholder="銘柄を検索" className="border p-2 rounded w-full mt-2" />
-          {searchResults.length > 0 && (
-            <ul className="border mt-2 rounded w-full">
-              {searchResults.map((result) => (
-                <li key={result.ec_brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300">
-                  {result.name}
-                </li>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">ナショナル本数とクラフト本数</label>
+            <select
+              value={JSON.stringify(nationalCraftRatio)}
+              onChange={(e) => {
+                setNationalCraftRatio(JSON.parse(e.target.value)); //選択した文字列をjson形式に変換して格納
+                ResetNationalSetSelection();
+                ResetCraftSetSelection();
+              }}
+              className="select select-bordered w-full"
+            >
+              {/* デフォルトで表示される値をリストの３番目に変更 */}
+              {nationalCraftOptions[totalCans].map((option, index) => (
+                <option key={index} value={JSON.stringify(option)}>
+                  {option.national}:{option.craft}
+                </option>
               ))}
-            </ul>
-          )}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">ナショナルの種類数</label>
+            <select
+              value={nationalKinds}
+              onChange={(e) => {
+                setNationalKinds(Number(e.target.value));
+                ResetNationalSetSelection();
+              }}
+              className="select select-bordered w-full"
+            >
+              {nationalKindsOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">クラフトの種類数</label>
+            <select
+              value={craftKinds}
+              onChange={(e) => {
+                setCraftKinds(Number(e.target.value));
+                ResetCraftSetSelection();
+              }}
+              className="select select-bordered w-full"
+            >
+              {craftKindsOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* ngListの内容を表示 */}
+          <div className="mt-4">
+            <h2 className="text-xl font-bold mb-2">除外銘柄リスト</h2>
+            {ngList.length > 0 ? (
+              <ul className="list-disc ml-5">
+                {ngList.map((item, index) => (
+                  <li key={index} className="text-sm flex justify-between items-center">
+                    {item.ng_name}
+                    <button className="ml-4 bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600" onClick={() => handleRemoveNgItem(index)}>
+                      削除
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">現在、除外されている銘柄はありません。</p>
+            )}
+          </div>
+
+          <div>
+            {/* 自分で銘柄を選択 */}
+            <p className="text-lg font-semibold mb-2">自分で銘柄を選択する</p>
+            <p className="text-md mb-2">選択された銘柄: {selectedFavorite ? `${selectedFavorite.name} [${selectedFavorite.category}]` : ""}</p>
+            <input type="text" value={newFavorite} onChange={handleFavoriteChange} placeholder="銘柄を検索" className="border p-2 rounded w-full mt-2" />
+            {searchResults.length > 0 && (
+              <ul className="border mt-2 rounded w-full">
+                {searchResults.map((result) => (
+                  <li key={result.ec_brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300">
+                    {result.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        {/* 右 */}
+        <div className="shadow-md rounded-lg p-4 mb-4 overflow-hidden">
+          <div className="card mb-4 bg-gray-200 p-8 pt-20 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
+            {userId !== undefined && <ProfileContainer user_id={userId} />}
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <h2 className="text-xl font-bold mb-2">National</h2>
           <div className="overflow-y-auto h-64 bg-white rounded-lg shadow-md p-4">

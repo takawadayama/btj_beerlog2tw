@@ -100,3 +100,7 @@ export interface EcBrandItem {
   description: string;
   price: number;
 }
+
+export interface DecodedToken {
+  sub: string;
+}

@@ -3,13 +3,12 @@ import { useState, useEffect } from "react";
 import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
-import { convertToPurchaseItem } from "./puchaseDetailConverter";
 import { createPurchase } from "./createPurchase";
 import Navbar from "./Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
 import { jwtDecode } from "jwt-decode";
 
-import { fetchFavorites, fetchPreferences, fetchEcSearchResults, addFavorite, deleteFavorite, updatePreferences } from "./api";
+import { fetchEcSearchResults } from "./api";
 
 import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem, DecodedToken } from "../../types/purchase_types";
 
@@ -122,15 +121,6 @@ export default function Home() {
       console.error("Failed to fetch recommendations:", error);
     }
   };
-
-  useEffect(() => {
-    console.log("selectedFavorite:", selectedFavorite);
-
-    console.log("nationalRecommendations:", JSON.stringify(nationalRecommendations, null, 2));
-    console.log("nationalSetDetails:", JSON.stringify(nationalSetDetails, null, 2));
-
-    console.log("purchaseSetItemAll[0]?.national_set:", JSON.stringify(purchaseSetItemAll[0]?.national_set, null, 2));
-  }, [selectedFavorite, nationalRecommendations, purchaseSetItemAll]);
 
   useEffect(() => {
     fetchData("national");

@@ -701,13 +701,14 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* 購入ボタン */}
-      <button onClick={handleAddToCart} className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
-        買い物かごに入れる
-      </button>
-      <button onClick={handlePurchaseItemAll} className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
-        購入する
-      </button>
+      <div className="flex space-x-4 mt-4 mb-4">
+        <button onClick={handleAddToCart} className="bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
+          買い物かごに入れる
+        </button>
+        <button onClick={handlePurchaseItemAll} className="bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
+          購入する
+        </button>
+      </div>
       {/* purchaseSetItemAllの表示 */}
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Purchase Set Items</h1>

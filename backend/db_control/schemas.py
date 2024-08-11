@@ -177,3 +177,11 @@ class PurchaseSetItem(BaseModel):
 
 class TransactionResponse(BaseModel):
     total_amount: int
+
+
+class ECSearchResult(BaseModel):
+    ec_brand_id: int
+    name: str
+    category: str
+    description: str
+    price: int

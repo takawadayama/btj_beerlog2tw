@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPurchase } from "./createPurchase";
 import Navbar from "./Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
+import PurchaseSetContainer from "./PurchaseSetContainer"; //買い物かごのコンポーネント
 import { jwtDecode } from "jwt-decode";
 
 import { fetchEcSearchResults } from "./api";
@@ -43,7 +44,7 @@ export default function Home() {
   const [craftSetDetails, setCraftSetDetails] = useState<PurchaseItem[]>([]);
 
   //おススメセットの種類を指定
-  const [nationalKinds, setNationalKinds] = useState<number>(1);
+  const [nationalKinds, setNationalKinds] = useState<number>(2);
   const [craftKinds, setCraftKinds] = useState<number>(3);
   const nationalKindsOptions = [1, 2, 3];
   const craftKindsOptions = [1, 2, 3, 6];
@@ -347,80 +348,6 @@ export default function Home() {
     setIsCraftSelected(false);
   };
 
-  const handleRemoveItem = (index: number) => {
-    setPurchaseSetItemAll((prevItems) => prevItems.filter((_, i) => i !== index));
-  };
-
-  const handleIncrementSetNumber = (index: number) => {
-    setPurchaseSetItemAll((prevItems) =>
-      prevItems.map((item, i) => {
-        if (i === index) {
-          const newSetNum = item.setDetails.set_num + 1;
-          return {
-            ...item,
-            setDetails: {
-              ...item.setDetails,
-              cans: (item.setDetails.cans / item.setDetails.set_num) * newSetNum,
-              set_num: newSetNum,
-            },
-            national_set: {
-              ...item.national_set,
-              cans: (item.national_set.cans / item.setDetails.set_num) * newSetNum,
-              details: item.national_set.details.map((detail) => ({
-                ...detail,
-                count: (detail.count / item.setDetails.set_num) * newSetNum,
-              })),
-            },
-            craft_set: {
-              ...item.craft_set,
-              cans: (item.craft_set.cans / item.setDetails.set_num) * newSetNum,
-              details: item.craft_set.details.map((detail) => ({
-                ...detail,
-                count: (detail.count / item.setDetails.set_num) * newSetNum,
-              })),
-            },
-          };
-        }
-        return item;
-      })
-    );
-  };
-
-  const handleDecrementSetNumber = (index: number) => {
-    setPurchaseSetItemAll((prevItems) =>
-      prevItems.map((item, i) => {
-        if (i === index && item.setDetails.set_num > 1) {
-          const newSetNum = item.setDetails.set_num - 1;
-          return {
-            ...item,
-            setDetails: {
-              ...item.setDetails,
-              cans: (item.setDetails.cans / item.setDetails.set_num) * newSetNum,
-              set_num: newSetNum,
-            },
-            national_set: {
-              ...item.national_set,
-              cans: (item.national_set.cans / item.setDetails.set_num) * newSetNum,
-              details: item.national_set.details.map((detail) => ({
-                ...detail,
-                count: (detail.count / item.setDetails.set_num) * newSetNum,
-              })),
-            },
-            craft_set: {
-              ...item.craft_set,
-              cans: (item.craft_set.cans / item.setDetails.set_num) * newSetNum,
-              details: item.craft_set.details.map((detail) => ({
-                ...detail,
-                count: (detail.count / item.setDetails.set_num) * newSetNum,
-              })),
-            },
-          };
-        }
-        return item;
-      })
-    );
-  };
-
   // 合計金額の受け取った後の処理は改めて考える
   const handlePurchaseItemAll = async () => {
     try {
@@ -710,69 +637,7 @@ export default function Home() {
         </button>
       </div>
       {/* purchaseSetItemAllの表示 */}
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Purchase Set Items</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {purchaseSetItemAll.map((item, index) => (
-            <div key={index} className="card w-full bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Set {index + 1}</h2>
-                <p>
-                  <span className="font-bold">Cans:</span> {item.setDetails.cans}
-                </p>
-                <p>
-                  <span className="font-bold">Set Number:</span> {item.setDetails.set_num}
-                </p>
-                <div className="flex space-x-2 mb-2">
-                  <button className="btn btn-secondary" onClick={() => handleDecrementSetNumber(index)} disabled={item.setDetails.set_num <= 1}>
-                    -
-                  </button>
-                  <button className="btn btn-secondary" onClick={() => handleIncrementSetNumber(index)}>
-                    +
-                  </button>
-                </div>
-                <button className="btn btn-error" onClick={() => handleRemoveItem(index)}>
-                  削除
-                </button>
-                <div className="divider"></div>
-                <div>
-                  <h3 className="text-lg font-semibold">National Set</h3>
-                  <p>
-                    <span className="font-bold">Set Name:</span> {item.national_set.set_name}
-                  </p>
-                  <p>
-                    <span className="font-bold">Cans:</span> {item.national_set.cans}
-                  </p>
-                  <ul className="list-disc ml-5">
-                    {item.national_set.details.map((detail, i) => (
-                      <li key={i}>
-                        {detail.name} - {detail.category} - {detail.price}円 - {detail.count} 本
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="divider"></div>
-                <div>
-                  <h3 className="text-lg font-semibold">Craft Set</h3>
-                  <p>
-                    <span className="font-bold">Set Name:</span> {item.craft_set.set_name}
-                  </p>
-                  <p>
-                    <span className="font-bold">Cans:</span> {item.craft_set.cans}
-                  </p>
-                  <ul className="list-disc ml-5">
-                    {item.craft_set.details.map((detail, i) => (
-                      <li key={i}>
-                        {detail.name} - {detail.category} - {detail.price}円 - {detail.count} 本
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PurchaseSetContainer purchaseSetItemAll={purchaseSetItemAll} setPurchaseSetItemAll={setPurchaseSetItemAll} />
     </div>
   );
 }

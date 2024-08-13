@@ -1,13 +1,14 @@
 import pandas as pd
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
+
 
 from db_control.mymodels import Purchase, PurchaseDetail, EC_Brand, Brand
 from db_control.connect import get_db
 from db_control.token import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from db_control.schemas import PurchaseSetItem, TransactionResponse, ECSearchResult
+from db_control.schemas import PurchaseSetItem, TransactionResponse, ECSearchResult, Purchaselog, PurchaseItem
 from typing import List
 
 # from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
@@ -123,3 +124,59 @@ def search_brands(search_term: str, db: Session = Depends(get_db)):
     if not brands:
         raise HTTPException(status_code=404, detail="Brands not found")
     return brands
+
+
+@router.get("/purchaselog", response_model=List[Purchaselog])
+def get_purchaselog(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    purchases = db.query(Purchase).filter(Purchase.user_id == user_id).all()
+
+    if not purchases:
+        raise HTTPException(status_code=404, detail="Purchases not found")
+
+    purchase_logs = []
+
+    for purchase in purchases:
+        purchase_details = (
+            db.query(
+                PurchaseDetail.ec_brand_id,
+                PurchaseDetail.category,
+                PurchaseDetail.name,
+                PurchaseDetail.price,
+                PurchaseDetail.ec_set_id,
+                func.count(PurchaseDetail.ec_brand_id).label('count'),
+            )
+            .filter(PurchaseDetail.purchase_id == purchase.purchase_id)
+            .group_by(
+                PurchaseDetail.ec_brand_id,
+                PurchaseDetail.category,
+                PurchaseDetail.name,
+                PurchaseDetail.price,
+                PurchaseDetail.ec_set_id,
+            )
+            .all()
+        )
+
+        details = [
+            PurchaseItem(
+                ec_brand_id=row.ec_brand_id,
+                category=row.category,
+                name=row.name,
+                price=row.price,
+                count=row.count,
+                ec_set_id=row.ec_set_id,
+            )
+            for row in purchase_details
+        ]
+
+        log = Purchaselog(
+            purchase_id=purchase.purchase_id,  # purchase_idを追加
+            date_time=purchase.date_time,
+            total_amount=purchase.total_amount,
+            total_cans=purchase.total_cans,
+            survey_completion=purchase.survey_completion,
+            details=details,
+        )
+
+        purchase_logs.append(log)
+
+    return purchase_logs

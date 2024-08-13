@@ -104,3 +104,12 @@ export interface EcBrandItem {
 export interface DecodedToken {
   sub: string;
 }
+
+export interface Purchaselog {
+  purchase_id: number;
+  date_time: string; // 日時はISO形式の文字列として扱う
+  total_amount: number;
+  total_cans: number;
+  survey_completion: boolean;
+  details: PurchaseItem[];
+}

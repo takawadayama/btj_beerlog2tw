@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from datetime import date
+from datetime import date, datetime
 
 
 class UserBase(BaseModel):
@@ -185,3 +185,12 @@ class ECSearchResult(BaseModel):
     category: str
     description: str
     price: int
+
+
+class Purchaselog(BaseModel):
+    purchase_id: int
+    date_time: datetime
+    total_amount: int
+    total_cans: int
+    survey_completion: bool
+    details: List[PurchaseItem]

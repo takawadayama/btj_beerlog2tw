@@ -34,52 +34,56 @@ export default function PurchaselogPage() {
   };
 
   return (
-    <div>
+    <div className="bg-gray-200 min-h-screen">
       <Navbar />
       <div className="container mx-auto p-4 mt-20">
         <h1 className="text-2xl font-bold mb-4">Purchase Logs</h1>
         <div className="grid grid-cols-1 gap-4">
           {purchaselog.map((log, index) => (
-            <div key={index} className="card w-full bg-base-100 shadow-xl rounded-lg">
-              <div className="card-body">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h2 className="card-title">Purchase ID: {log.purchase_id}</h2>
-                    <h2 className="card-title">Purchase Date: {new Date(log.date_time).toLocaleDateString()}</h2>
-                    <h2 className="card-title">Total Amount: {log.total_amount} 円</h2>
-                    <h2 className="card-title">Total Cans: {log.total_cans} 本</h2>
-                    <h2 className="card-title">Survey Completed: {log.survey_completion ? "Yes" : "No"}</h2>
-                  </div>
-                  <div>
-                    {/* ボタンを追加 */}
-                    <button className={`btn ${log.survey_completion ? "btn-primary" : "btn-disabled"}`} onClick={() => handleSurveyRedirect(log.purchase_id)} disabled={!log.survey_completion}>
-                      Survey
-                    </button>
-                  </div>
+            <div key={index} className="border-2 border-amber-600 bg-amber-100 shadow-lg rounded-lg p-6 hover:bg-amber-500 transition-all duration-300">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold mb-2">Purchase ID: {log.purchase_id}</h2>
+                  <h2 className="text-xl font-bold mb-2">Purchase Date: {new Date(log.date_time).toLocaleDateString()}</h2>
+                  <h2 className="text-xl font-bold mb-2">Total Amount: {log.total_amount} 円</h2>
+                  <h2 className="text-xl font-bold mb-2">Total Cans: {log.total_cans} 本</h2>
+                  <h2 className="text-xl font-bold mb-2">Survey Completed: {log.survey_completion ? "Yes" : "No"}</h2>
                 </div>
+                <div>
+                  {/* ボタンをスタイルに合わせて修正 */}
+                  <button
+                    className={`text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300 ${
+                      !log.survey_completion ? "cursor-not-allowed opacity-50" : ""
+                    }`}
+                    onClick={() => handleSurveyRedirect(log.purchase_id)}
+                    disabled={!log.survey_completion}
+                  >
+                    Survey
+                  </button>
+                </div>
+              </div>
 
-                <div className="divider"></div>
-
+              <div className="mt-4 border-t border-gray-300 pt-4">
                 {/* Purchase Details Section */}
-                <div className="card bg-gray-100 shadow-md p-4 rounded-lg">
+                <div className="bg-gray-100 p-4 rounded-lg shadow-inner text-black">
                   <h3 className="text-lg font-semibold mb-4">Purchase Details</h3>
                   <div className="overflow-x-auto">
-                    <table className="table table-compact w-full">
+                    <table className="table-auto w-full">
                       <thead>
                         <tr>
-                          <th>Brand</th>
-                          <th>Category</th>
-                          <th>Price (円)</th>
-                          <th>Count</th>
+                          <th className="px-4 py-2">Brand</th>
+                          <th className="px-4 py-2">Category</th>
+                          <th className="px-4 py-2">Price (円)</th>
+                          <th className="px-4 py-2">Count</th>
                         </tr>
                       </thead>
                       <tbody>
                         {log.details.map((detail, i) => (
                           <tr key={i}>
-                            <td>{detail.name}</td>
-                            <td>{detail.category}</td>
-                            <td>{detail.price}</td>
-                            <td>{detail.count}</td>
+                            <td className="border px-4 py-2">{detail.name}</td>
+                            <td className="border px-4 py-2">{detail.category}</td>
+                            <td className="border px-4 py-2">{detail.price}</td>
+                            <td className="border px-4 py-2">{detail.count}</td>
                           </tr>
                         ))}
                       </tbody>

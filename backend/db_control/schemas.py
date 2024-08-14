@@ -58,6 +58,7 @@ class RecommendResponseItem(BaseModel):
 class Brand(BaseModel):
     brand_id: int
     brand_name: str
+    brand_logo: Optional[str] = None
 
     class Config:
         orm_mode = True

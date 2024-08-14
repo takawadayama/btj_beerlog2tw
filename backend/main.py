@@ -102,6 +102,12 @@ def read_user_favorites(user_id: int = Query(...), db: Session = Depends(connect
     favorites = crud.get_user_favorites(db, user_id=user_id)
     if not favorites:
         raise HTTPException(status_code=404, detail="Favorites not found")
+
+    for favorite in favorites:
+        brand = db.query(Brand).filter(Brand.brand_id == favorite.brand_id).first()
+        if brand and brand.brand_picture:
+            favorite.brand_logo = base64.b64encode(brand.brand_picture).decode('utf-8')  # BLOBデータをBase64エンコード
+
     return favorites
 
 

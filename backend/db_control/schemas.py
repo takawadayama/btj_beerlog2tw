@@ -195,3 +195,7 @@ class Purchaselog(BaseModel):
     total_cans: int
     survey_completion: bool
     details: List[PurchaseItem]
+
+
+class UserNameResponse(BaseModel):
+    user_name: str

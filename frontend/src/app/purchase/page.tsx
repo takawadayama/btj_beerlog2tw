@@ -9,8 +9,6 @@ import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポ�
 import PurchaseSetContainer from "./PurchaseSetContainer"; //買い物かごのコンポーネント
 import { jwtDecode } from "jwt-decode";
 
-import { fetchEcSearchResults } from "./api";
-
 import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem, DecodedToken } from "../../types/purchase_types";
 
 export default function Home() {
@@ -50,10 +48,6 @@ export default function Home() {
   const craftKindsOptions = [1, 2, 3, 6];
 
   const [ngList, setNgList] = useState<NgList[]>([]);
-  const [newFavorite, setNewFavorite] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<EcBrandItem[]>([]);
-  const [selectedFavorite, setSelectedFavorite] = useState<EcBrandItem | null>(null);
-  const [isNewFavoriteSelected, setIsNewFavoriteSelected] = useState<boolean>(false);
 
   const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
   const [jwt, setJwt] = useState<string>("");
@@ -141,164 +135,6 @@ export default function Home() {
 
   const handleRemoveNgItem = (indexToRemove: number) => {
     setNgList((prevNgList) => prevNgList.filter((_, index) => index !== indexToRemove));
-  };
-
-  // "別の銘柄を選択"ボタンを押したときに、それをngListへ追加するとともにリコメンドし直す
-  const handleProposeAnotherBrand = (ec_brand_id: number, name: string, category: string) => {
-    // 1. ngListの内容を取得して、tempNgListへ入れる
-    const tempNgList = [...ngList];
-
-    // 2. tempNgListに対して、重複するかどうかを確認したうえで、ec_brand_idとnameを追加する
-    const exists = tempNgList.some((item) => item.ng_id === ec_brand_id);
-    if (!exists) {
-      tempNgList.push({ ng_id: ec_brand_id, ng_name: name });
-    }
-
-    // 3. setNgList(temNgList)として、変数を渡す
-    setNgList(tempNgList);
-
-    // 4. temNgListを用いて、fetchRecommendationsを実行する
-    if (category === "craft") {
-      if (craftSelectedSet) {
-        fetchRecommendations(craftSelectedSet.set_name, craftSelectedSet.ec_set_id, category, nationalCraftRatio.craft, craftKinds, tempNgList);
-      } else {
-        console.error("craftSelectedSet is undefined");
-      }
-    }
-    if (category === "national") {
-      if (nationalSelectedSet) {
-        fetchRecommendations(nationalSelectedSet.set_name, nationalSelectedSet.ec_set_id, category, nationalCraftRatio.national, nationalKinds, tempNgList);
-      } else {
-        console.error("nationalSelectedSet is undefined");
-      }
-    }
-  };
-
-  const handleFavoriteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewFavorite(e.target.value);
-    setIsNewFavoriteSelected(false);
-  };
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (newFavorite.length > 0 && !isNewFavoriteSelected) {
-        try {
-          const results = await fetchEcSearchResults(newFavorite);
-          setSearchResults(results);
-        } catch (error) {
-          console.error("Failed to fetch search results:", error);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    };
-
-    fetchResults();
-  }, [newFavorite]);
-
-  const handleFavoriteSelect = (ec_brand: EcBrandItem) => {
-    setSelectedFavorite(ec_brand);
-    setNewFavorite(ec_brand.name);
-    setIsNewFavoriteSelected(true);
-    setSearchResults([]);
-  };
-
-  //選択したnational銘柄へ変更する処理
-  const handleUpdateNationalSelectedBrand = (ec_brand_id: number) => {
-    if (selectedFavorite?.category !== "national") {
-      alert("nationalブランドを選択してください");
-      return; // 条件が満たされない場合、処理を中断
-    }
-
-    // 既にselectedFavorite.ec_brand_idを持つアイテムが存在するかチェック
-    const alreadyExistsInRecommendations = nationalRecommendations.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
-
-    const alreadyExistsInSetDetails = nationalSetDetails.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
-
-    if (alreadyExistsInRecommendations || alreadyExistsInSetDetails) {
-      alert("この銘柄は既に選択されています。");
-      return; // 存在する場合、処理を中断
-    }
-
-    setNationalRecommendations((prevRecommendations) =>
-      prevRecommendations.map((item) =>
-        item.ec_brand_id === ec_brand_id
-          ? {
-              ...item,
-              // 必要に応じて他のプロパティも更新可能
-              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
-              name: selectedFavorite?.name || item.name,
-              price: selectedFavorite?.price || item.price,
-              description: selectedFavorite?.description || item.description,
-            }
-          : item
-      )
-    );
-
-    setNationalSetDetails((prevSetDetails) =>
-      prevSetDetails.map((item) =>
-        item.ec_brand_id === ec_brand_id
-          ? {
-              ...item,
-              // nationalSetDetailsにも同じように更新
-              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
-              name: selectedFavorite?.name || item.name,
-              price: selectedFavorite?.price || item.price,
-              ec_set_id: 998, // 自分で選択したものは999を入れる
-            }
-          : item
-      )
-    );
-    setSelectedFavorite(null);
-  };
-
-  //選択したcraft銘柄へ変更する処理
-  const handleUpdateCraftSelectedBrand = (ec_brand_id: number) => {
-    if (selectedFavorite?.category !== "craft") {
-      alert("craftブランドを選択してください");
-      return; // 条件が満たされない場合、処理を中断
-    }
-
-    // 既にselectedFavorite.ec_brand_idを持つアイテムが存在するかチェック
-    const alreadyExistsInRecommendations = craftRecommendations.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
-
-    const alreadyExistsInSetDetails = craftSetDetails.some((item) => item.ec_brand_id === selectedFavorite?.ec_brand_id);
-
-    if (alreadyExistsInRecommendations || alreadyExistsInSetDetails) {
-      alert("この銘柄は既に選択されています。");
-      return; // 存在する場合、処理を中断
-    }
-
-    setCraftRecommendations((prevRecommendations) =>
-      prevRecommendations.map((item) =>
-        item.ec_brand_id === ec_brand_id
-          ? {
-              ...item,
-              // 必要に応じて他のプロパティも更新可能
-              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
-              name: selectedFavorite?.name || item.name,
-              price: selectedFavorite?.price || item.price,
-              description: selectedFavorite?.description || item.description,
-            }
-          : item
-      )
-    );
-
-    setCraftSetDetails((prevSetDetails) =>
-      prevSetDetails.map((item) =>
-        item.ec_brand_id === ec_brand_id
-          ? {
-              ...item,
-              // nationalSetDetailsにも同じように更新
-              ec_brand_id: selectedFavorite?.ec_brand_id || ec_brand_id,
-              name: selectedFavorite?.name || item.name,
-              price: selectedFavorite?.price || item.price,
-              ec_set_id: 999, // 自分で選択したものは999を入れる
-            }
-          : item
-      )
-    );
-    setSelectedFavorite(null);
   };
 
   const handleAddToCart = () => {
@@ -445,41 +281,6 @@ export default function Home() {
               ))}
             </select>
           </div>
-
-          {/* ngListの内容を表示 */}
-          <div className="mt-4">
-            <h2 className="text-xl font-bold mb-2">除外銘柄リスト</h2>
-            {ngList.length > 0 ? (
-              <ul className="list-disc ml-5">
-                {ngList.map((item, index) => (
-                  <li key={index} className="text-sm flex justify-between items-center">
-                    {item.ng_name}
-                    <button className="ml-4 bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600" onClick={() => handleRemoveNgItem(index)}>
-                      削除
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">現在、除外されている銘柄はありません。</p>
-            )}
-          </div>
-
-          <div>
-            {/* 自分で銘柄を選択 */}
-            <p className="text-lg font-semibold mb-2">自分で銘柄を選択する</p>
-            <p className="text-md mb-2">選択された銘柄: {selectedFavorite ? `${selectedFavorite.name} [${selectedFavorite.category}]` : ""}</p>
-            <input type="text" value={newFavorite} onChange={handleFavoriteChange} placeholder="銘柄を検索" className="border p-2 rounded w-full mt-2" />
-            {searchResults.length > 0 && (
-              <ul className="border mt-2 rounded w-full">
-                {searchResults.map((result) => (
-                  <li key={result.ec_brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300">
-                    {result.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
         {/* 右 */}
         <div className="shadow-md rounded-lg p-4 mb-4 overflow-hidden">
@@ -521,12 +322,6 @@ export default function Home() {
                       <div className="flex items-center space-x-4">
                         <p className="text-xs">Price: {item.price}</p>
                         <p className="text-xs">Count: {item.count}</p>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleUpdateNationalSelectedBrand(item.ec_brand_id)}>
-                          選択銘柄に変更
-                        </button>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleProposeAnotherBrand(item.ec_brand_id, item.name, "national")}>
-                          別銘柄を提案
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -591,12 +386,6 @@ export default function Home() {
                       <div className="flex items-center space-x-4">
                         <p className="text-xs">Price: {item.price}</p>
                         <p className="text-xs">Count: {item.count}</p>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleUpdateCraftSelectedBrand(item.ec_brand_id)}>
-                          選択銘柄に変更
-                        </button>
-                        <button className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700" onClick={() => handleProposeAnotherBrand(item.ec_brand_id, item.name, "craft")}>
-                          別銘柄を提案
-                        </button>
                       </div>
                     </div>
                   </div>

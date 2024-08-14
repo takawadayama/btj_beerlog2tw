@@ -152,7 +152,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-30 bg-gray-50 bg-opacity-80 border-b border-gray-400">
+    <nav className="fixed top-0 right-0 left-0 z-30 bg-gray-50 border-b border-gray-400">
       <div className="flex justify-between items-center p-4">
         <div className="flex space-x-4 ml-20 items-center">
           <Link href="/" legacyBehavior>

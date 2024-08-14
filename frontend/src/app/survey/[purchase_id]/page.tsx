@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import Navbar from "../../../common/Navbar"; // Navbarコンポーネントのインポート
+import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
 import RadarChartForSurvey from "./RadarChartForSurvey"; // RadarChartForSurveyのインポート
 import { toast, ToastContainer } from "react-toastify"; // react-toastifyをインポート
 import "react-toastify/dist/ReactToastify.css"; // react-toastifyのCSSをインポート

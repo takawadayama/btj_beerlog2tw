@@ -4,7 +4,7 @@ import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
 import { createPurchase } from "./createPurchase";
-import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
+import Navbar from "../common/Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
 import PurchaseSetContainer from "./PurchaseSetContainer"; //買い物かごのコンポーネント
 import { jwtDecode } from "jwt-decode";

@@ -77,7 +77,7 @@ export default function UserPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen pt-20 mt-5">
-      <Navbar /> {/* Navbarコンポーネントの表示 */}
+      {userWithPhotos && <Navbar userName={userWithPhotos.user.user_name} />} {/* Navbarコンポーネントの表示 */}
       <div className="p-4 lg:px-60">
         {/* ログイン機能実装後に削除 */}
         {/* <div className="mb-4 p-4 border bg-red-200 border-red-500 rounded">

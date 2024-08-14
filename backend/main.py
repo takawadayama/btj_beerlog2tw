@@ -42,7 +42,7 @@ def read_user(user_id: int, db: Session = Depends(connect.get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     age = calculate_age(user.birthdate)
-    return {"age": age, "gender": user.gender}
+    return {"user_name": user.user_name, "age": age, "gender": user.gender}
 
 
 @app.get("/user_with_photos", response_model=schemas.UserWithPhotos)

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Navbar from './Navbar';
 import { fetchFavorites, fetchPreferences, fetchSearchResults, addFavorite, deleteFavorite, updatePreferences } from './api';
 import { User, Brand, Preference } from './types';
 import RadarChart from './RadarChart';
@@ -21,6 +22,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
   const [updatedPreferences, setUpdatedPreferences] = useState<{ [key: number]: number }>({});
   const [searchResults, setSearchResults] = useState<Brand[]>([]);
   const [showInput, setShowInput] = useState(false);
+  const [isNewFavoriteSelected, setIsNewFavoriteSelected] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,7 +46,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (newFavorite.length > 0) {
+      if (newFavorite.length > 0 && !isNewFavoriteSelected) {
         try {
           const results = await fetchSearchResults(newFavorite);
           setSearchResults(results);
@@ -57,15 +59,17 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     };
 
     fetchResults();
-  }, [newFavorite]);
+  }, [newFavorite, isNewFavoriteSelected]);
 
   const handleFavoriteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewFavorite(e.target.value);
+    setIsNewFavoriteSelected(false);
   };
 
   const handleFavoriteSelect = (brand: Brand) => {
     setSelectedFavorite(brand);
     setNewFavorite(brand.brand_name);
+    setIsNewFavoriteSelected(true);
     setSearchResults([]);
   };
 
@@ -139,111 +143,161 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-10">
-      {/* 左 */}
-      <div className="bg-gray-200 p-4 rounded flex flex-col items-center col-span-1" style={{ height: 'auto' }}>
-        <div className="flex items-start w-full mb-4">
-          <img
-            src={`data:image/jpeg;base64,${user.user_picture}`}
-            alt="User Picture"
-            className="rounded-full w-48 h-48 object-cover mb-2 mr-4"
-          />
-          <div>
-            <h2 className="text-xl font-bold">{user.user_name}</h2>
-            <p>{user.user_profile}</p>
-            <div className="mt-4">
-              <p>好きな銘柄:</p>
-              {favorites.map(favorite => (
-                <div key={favorite.brand_id} className="flex items-center justify-between w-full">
-                  <p>{favorite.brand_name}</p>
-                  <button onClick={() => handleFavoriteDelete(favorite.brand_id)} className="text-red-500">
-                    <RemoveCircleOutlineIcon />
+    <div>
+      {user.user_name && <Navbar userName={user.user_name} />} {/* userNameを条件付きで渡す */}
+      <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-10">
+        {/* 左 */}
+        <div className="bg-gray-200 p-4 rounded flex flex-col items-center col-span-1" style={{ height: 'auto' }}>
+          <div className="flex items-start w-full mb-4">
+            <img
+              src={`data:image/jpeg;base64,${user.user_picture}`}
+              alt="User Picture"
+              className="rounded-full w-56 h-56 object-cover mb-2 mr-4"
+            />
+            <div>
+              <h2 className="text-xl font-bold">{user.user_name}</h2>
+              <p>{user.user_profile}</p>
+              <div className="mt-4">
+                <p>好きな銘柄:</p>
+                {favorites.map(favorite => (
+                  <div key={favorite.brand_id} className="flex items-center justify-between w-full">
+                    <p>{favorite.brand_name}</p>
+                    <button onClick={() => handleFavoriteDelete(favorite.brand_id)} className="text-red-500">
+                      <RemoveCircleOutlineIcon />
+                    </button>
+                  </div>
+                ))}
+                <button onClick={() => setShowInput(true)} className="mt-2 text-blue-500">
+                  <AddCircleOutlineIcon />
+                </button>
+                {showInput && (
+                  <>
+                    <input
+                      type="text"
+                      value={newFavorite}
+                      onChange={handleFavoriteChange}
+                      placeholder="好きな銘柄を追加"
+                      className="border p-2 rounded w-full mt-2"
+                    />
+                    {searchResults.length > 0 && (
+                      <ul className="border mt-2 rounded w-full">
+                        {searchResults.map(result => (
+                          <li
+                            key={result.brand_id}
+                            onClick={() => handleFavoriteSelect(result)}
+                            className="cursor-pointer p-2 hover:bg-gray-300"
+                          >
+                            {result.brand_name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <button onClick={handleFavoriteSubmit} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
+                      追加する
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-around w-3/5 mt-2">
+            <div className="text-center">
+              <p className="font-bold">フォロワー</p>
+              <p>958</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold">フォロー中</p>
+              <p>495</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold">投稿</p>
+              <p>593</p>
+            </div>
+          </div>
+          <div className="flex justify-center w-full mt-4">
+            <div className="flex justify-between w-full max-w-3xl">
+              <div
+                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg mr-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
+                onClick={() => window.location.href = "/"}
+              >
+                <h2 className="text-lg font-bold mb-2">お店でびあログ</h2> {/* 文字を小さくするため text-lg を使用 */}
+                <table className="w-full mb-8"> {/* スペースを狭くするため mb-6 に変更 */}
+                  <tbody>
+                    <tr>
+                      <td className="text-left font-bold">累計生ビール:</td>
+                      <td className="text-right">2,531杯</td>
+                    </tr>
+                    <tr>
+                      <td className="text-left font-bold">訪問店舗数:</td>
+                      <td className="text-right">692店舗</td>
+                    </tr>
+                    <tr>
+                      <td className="text-left font-bold">ステータス:</td>
+                      <td className="text-right">神</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="absolute bottom-1 right-2"> {/* ボタンの位置を調整 */}
+                  <button
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                    onClick={() => window.location.href = "/search"}
+                  >
+                    飲食店を探す &rarr;
                   </button>
                 </div>
-              ))}
-              <button onClick={() => setShowInput(true)} className="mt-2 text-blue-500">
-                <AddCircleOutlineIcon />
-              </button>
-              {showInput && (
-                <>
-                  <input
-                    type="text"
-                    value={newFavorite}
-                    onChange={handleFavoriteChange}
-                    placeholder="好きな銘柄を追加"
-                    className="border p-2 rounded w-full mt-2"
-                  />
-                  {searchResults.length > 0 && (
-                    <ul className="border mt-2 rounded w-full">
-                      {searchResults.map(result => (
-                        <li
-                          key={result.brand_id}
-                          onClick={() => handleFavoriteSelect(result)}
-                          className="cursor-pointer p-2 hover:bg-gray-300"
-                        >
-                          {result.brand_name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <button onClick={handleFavoriteSubmit} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
-                    追加する
+              </div>
+
+              <div
+                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg ml-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
+                onClick={() => window.location.href = "/purchase"}
+              >
+                <h2 className="text-lg font-bold mb-2">おうちでびあログ</h2> {/* 文字を小さくするため text-lg を使用 */}
+                <table className="w-full mb-8"> {/* スペースを狭くするため mb-6 に変更 */}
+                  <tbody>
+                    <tr>
+                      <td className="text-left font-bold">累計缶ビール:</td>
+                      <td className="text-right">3,453本</td>
+                    </tr>
+                    <tr>
+                      <td className="text-left font-bold">累計摂取量:</td>
+                      <td className="text-right">1,208ℓ</td>
+                    </tr>
+                    <tr>
+                      <td className="text-left font-bold">銘柄数:</td>
+                      <td className="text-right">401銘柄</td>
+                    </tr>
+                    <tr>
+                      <td className="text-left font-bold">ステータス:</td>
+                      <td className="text-right">レジェンド</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="absolute bottom-1 right-2"> {/* ボタンの位置を調整 */}
+                  <button
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                    onClick={() => window.location.href = "/recommendation"}
+                  >
+                    おすすめ銘柄をお届け &rarr;
                   </button>
-                </>
-              )}
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
-        <div className="flex justify-around w-full mt-2">
-          <div className="text-center">
-            <p className="font-bold">フォロワー</p>
-            <p>958</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold">フォロー中</p>
-            <p>495</p>
-          </div>
-          <div className="text-center">
-            <p className="font-bold">投稿</p>
-            <p>593</p>
-          </div>
+    
+        {/* 右 */}
+        <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: 'auto' }}>
+          <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
+          <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
+            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: 'absolute', bottom: '1px', right: '10px' }}>
+              更新
+            </button>
+          </form>
         </div>
-        <div className="flex justify-center w-full mt-4">
-          <div className="flex justify-between w-full max-w-3xl">
-            <div
-              className="text-center cursor-pointer border p-4 rounded-lg mr-2 w-1/2 hover:bg-gray-100"
-              onClick={() => window.location.href = "/"}
-            >
-              <h2 className="text-xl font-bold mb-2">お店でびあログ</h2>
-              <p>累計生ビール: 2,531杯</p>
-              <p>訪問店舗数: 692店舗</p>
-              <p>生ビールランク: 神</p>
-            </div>
-            <div
-              className="text-center cursor-pointer border p-4 rounded-lg ml-2 w-1/2 hover:bg-gray-100"
-              onClick={() => window.location.href = "/purchase"}
-            >
-              <h2 className="text-xl font-bold mb-2">おうちでびあログ</h2>
-              <p>累計缶ビール: 3,453本</p>
-              <p>累計摂取量: 1,208ℓ</p>
-              <p>銘柄数: 401店舗</p>
-              <p>おうちビールランク: レジェンド</p>
-            </div>
-          </div>
-        </div>
+    
+        <ToastContainer position="top-right" autoClose={1000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       </div>
-  
-      {/* 右 */}
-      <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: 'auto' }}>
-        <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
-        <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
-          <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: 'absolute', bottom: '1px', right: '10px' }}>
-            更新
-          </button>
-        </form>
-      </div>
-  
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
   );
 };

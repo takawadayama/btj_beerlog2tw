@@ -130,6 +130,7 @@ class SurveySubmission(BaseModel):
 
 
 class UserWithAgeGender(BaseModel):
+    user_name: str
     age: int
     gender: int
 

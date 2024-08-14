@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios, { AxiosError } from "axios";
-import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
+import Navbar from "../common/Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
 import PhotosContainer from "./PhotosContainer"; // PhotosContainerコンポーネントのインポート
 

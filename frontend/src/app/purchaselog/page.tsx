@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchPurchaselog } from "./getPurchaselog";
 import { Purchaselog } from "../../types/purchase_types";
 import { jwtDecode } from "jwt-decode";
-import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
+import Navbar from "../common/Navbar"; // Navbarコンポーネントのインポート
 import { useRouter } from "next/navigation"; // useRouterをインポート
 
 interface DecodedToken {

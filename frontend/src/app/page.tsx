@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUserName } from "@/common/getUserName";
+import { getUserName } from "./common/getUserName";
 
 const Home = () => {
   const [userName, setUserName] = useState<string | null>(null);

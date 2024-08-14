@@ -155,8 +155,11 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
               <div className="mt-4">
                 <p>好きな銘柄:</p>
                 {favorites.map((favorite) => (
-                  <div key={favorite.brand_id} className="flex items-center justify-between w-full">
-                    <p>{favorite.brand_name}</p>
+                <div key={favorite.brand_id} className="flex items-center justify-between w-full mb-2">
+                    <div className="flex items-center">
+                      <img src={`data:image/png;base64,${favorite.brand_logo}`} alt={favorite.brand_name} className="w-10 h-10 object-cover rounded-full border-2 border-amber-600 mr-4" />
+                      <p>{favorite.brand_name}</p>
+                    </div>
                     <button onClick={() => handleFavoriteDelete(favorite.brand_id)} className="text-red-500">
                       <RemoveCircleOutlineIcon />
                     </button>
@@ -171,7 +174,8 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                     {searchResults.length > 0 && (
                       <ul className="border mt-2 rounded w-full">
                         {searchResults.map((result) => (
-                          <li key={result.brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300">
+                          <li key={result.brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300 flex items-center">
+                            <img src={`data:image/png;base64,${result.brand_logo}`} alt={result.brand_name} className="w-6 h-6 object-cover rounded-full border-2 border-amber-600 mr-2" />
                             {result.brand_name}
                           </li>
                         ))}
@@ -205,10 +209,8 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                 className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg mr-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
                 onClick={() => (window.location.href = "/")}
               >
-                <h2 className="text-lg font-bold mb-2">お店でびあログ</h2> {/* 文字を小さくするため text-lg を使用 */}
+                <h2 className="text-lg font-bold mb-2">お店でびあログ</h2>
                 <table className="w-full mb-8">
-                  {" "}
-                  {/* スペースを狭くするため mb-6 に変更 */}
                   <tbody>
                     <tr>
                       <td className="text-left font-bold">累計生ビール:</td>
@@ -225,8 +227,6 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                   </tbody>
                 </table>
                 <div className="absolute bottom-1 right-2">
-                  {" "}
-                  {/* ボタンの位置を調整 */}
                   <button
                     className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
                     onClick={() => (window.location.href = "/search")}
@@ -235,15 +235,13 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                   </button>
                 </div>
               </div>
-
+  
               <div
                 className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg ml-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
                 onClick={() => (window.location.href = "/purchase")}
               >
-                <h2 className="text-lg font-bold mb-2">おうちでびあログ</h2> {/* 文字を小さくするため text-lg を使用 */}
+                <h2 className="text-lg font-bold mb-2">おうちでびあログ</h2>
                 <table className="w-full mb-8">
-                  {" "}
-                  {/* スペースを狭くするため mb-6 に変更 */}
                   <tbody>
                     <tr>
                       <td className="text-left font-bold">累計缶ビール:</td>
@@ -264,8 +262,6 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                   </tbody>
                 </table>
                 <div className="absolute bottom-1 right-2">
-                  {" "}
-                  {/* ボタンの位置を調整 */}
                   <button
                     className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
                     onClick={() => (window.location.href = "/recommendation")}
@@ -277,7 +273,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
             </div>
           </div>
         </div>
-
+  
         {/* 右 */}
         <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
           <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
@@ -287,11 +283,12 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
             </button>
           </form>
         </div>
-
+  
         <ToastContainer position="top-right" autoClose={1000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       </div>
     </div>
   );
+  
 };
 
 export default ProfileContainer;

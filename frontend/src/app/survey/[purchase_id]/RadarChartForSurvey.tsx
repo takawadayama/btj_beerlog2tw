@@ -66,22 +66,20 @@ const RadarChartForSurvey: React.FC<RadarChartProps> = ({ items, formData, onPre
     const angle = (Math.PI / 2) - (2 * Math.PI * index / total);
     const radius = 0.57; // 中心からの距離を調整
     return {
-      top: `${50 - radius * 100 * Math.sin(angle)}%`,
+      top: `${45 - radius * 100 * Math.sin(angle)}%`, // 全体を上にずらす
       left: `${50 + radius * 100 * Math.cos(angle)}%`,
     };
   };
 
   const getLabelPosition = (item_id: number) => {
-    if (item_id === 1) {
-      return 'flex-row';
-    } else if (item_id === 5) {
+    if (item_id === 1 || item_id === 5) {
       return 'flex-row';
     }
     return 'flex-col';
   };
 
   return (
-    <div className="relative w-96 h-96">
+    <div className="relative w-96 h-96" style={{ transform: 'translateY(-10%)' }}> {/* チャート全体を上にずらす */}
       <Radar data={data} options={options} />
       {items.map((item, index) => {
         const position = calculatePosition(index, items.length);

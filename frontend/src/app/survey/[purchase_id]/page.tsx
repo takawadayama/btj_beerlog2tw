@@ -1,11 +1,12 @@
 "use client"; // クライアントコンポーネントとしてマーク
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import Navbar from '../../user/Navbar'; // Navbarコンポーネントのインポート
-import RadarChartForSurvey from './RadarChartForSurvey'; // RadarChartForSurveyのインポート
-import { toast, ToastContainer } from 'react-toastify'; // react-toastifyをインポート
-import 'react-toastify/dist/ReactToastify.css'; // react-toastifyのCSSをインポート
+import { useRouter } from "next/navigation";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import Navbar from "../../../common/Navbar"; // Navbarコンポーネントのインポート
+import RadarChartForSurvey from "./RadarChartForSurvey"; // RadarChartForSurveyのインポート
+import { toast, ToastContainer } from "react-toastify"; // react-toastifyをインポート
+import "react-toastify/dist/ReactToastify.css"; // react-toastifyのCSSをインポート
+import { FaCheckCircle } from "react-icons/fa";
 
 interface Item {
   item_id: number;
@@ -26,7 +27,8 @@ interface Brand {
 const SurveyPage = () => {
   const router = useRouter();
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string>("");
+  const [userName, setUserName] = useState<string>(""); // userNameステートを追加
   const [age, setAge] = useState<number | null>(null);
   const [gender, setGender] = useState<number | null>(null);
   const [purchaseDate, setPurchaseDate] = useState<string | null>(null); // 購入日を保持
@@ -36,14 +38,14 @@ const SurveyPage = () => {
   const [averageScores, setAverageScores] = useState<Record<number, Record<number, number>>>({}); // brand_idごとの平均スコア
 
   useEffect(() => {
-    const purchaseId = window.location.pathname.split('/').pop();
+    const purchaseId = window.location.pathname.split("/").pop();
     if (purchaseId) {
       setPurchaseId(purchaseId);
       fetchItems();
       fetchBrands(purchaseId);
       fetchPurchaseDate(purchaseId);
     } else {
-      router.push('/');
+      router.push("/");
     }
 
     // JWTからuser_idを取得してuserIdステートに設定
@@ -56,11 +58,11 @@ const SurveyPage = () => {
 
   const fetchItems = async () => {
     try {
-      const response = await fetch('http://localhost:8000/items');
+      const response = await fetch("http://localhost:8000/items");
       const data = await response.json();
       setItems(data);
     } catch (error) {
-      console.error('Error fetching items:', error);
+      console.error("Error fetching items:", error);
     }
   };
 
@@ -68,18 +70,20 @@ const SurveyPage = () => {
     try {
       const response = await fetch(`http://localhost:8000/purchase/${purchaseId}/brands`);
       const data = await response.json();
-      const brandsWithLogo = await Promise.all(data.map(async (brand: Brand) => {
-        const logoResponse = await fetch(`http://localhost:8000/brands/${brand.brand_id}/logo`);
-        const logoBlob = await logoResponse.blob();
-        const logoUrl = URL.createObjectURL(logoBlob);
-        return { ...brand, brand_logo_url: logoUrl };
-      }));
+      const brandsWithLogo = await Promise.all(
+        data.map(async (brand: Brand) => {
+          const logoResponse = await fetch(`http://localhost:8000/brands/${brand.brand_id}/logo`);
+          const logoBlob = await logoResponse.blob();
+          const logoUrl = URL.createObjectURL(logoBlob);
+          return { ...brand, brand_logo_url: logoUrl };
+        })
+      );
       setBrands(brandsWithLogo);
       brandsWithLogo.forEach((brand: Brand) => {
         fetchAverageScores(brand.brand_id); // 各ブランドの平均スコアを取得
       });
     } catch (error) {
-      console.error('Error fetching brands:', error);
+      console.error("Error fetching brands:", error);
     }
   };
 
@@ -93,7 +97,7 @@ const SurveyPage = () => {
         [brandId]: data,
       }));
     } catch (error) {
-      console.error('Error fetching average scores:', error);
+      console.error("Error fetching average scores:", error);
     }
   };
 
@@ -103,14 +107,14 @@ const SurveyPage = () => {
       const data = await response.json();
       setPurchaseDate(data.purchase_date);
     } catch (error) {
-      console.error('Error fetching purchase date:', error);
+      console.error("Error fetching purchase date:", error);
     }
   };
 
   const fetchUserIdFromJWT = () => {
-    const token = localStorage.getItem('token'); // JWTトークンをローカルストレージから取得
+    const token = localStorage.getItem("token"); // JWTトークンをローカルストレージから取得
     if (token) {
-      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
+      const decodedToken: any = JSON.parse(atob(token.split(".")[1]));
       return decodedToken.sub; // ここでJWTのペイロードからuser_idを取得
     }
     return null;
@@ -121,13 +125,16 @@ const SurveyPage = () => {
       const response = await fetch(`http://localhost:8000/user/${userId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched user data:", data); // レスポンス全体をコンソールに表示
         setAge(data.age);
         setGender(data.gender);
+        setUserName(data.user_name); // userNameを取得して設定
+        console.log("Fetched user name:", data.user_name); // userNameをコンソールに表示
       } else {
-        alert('User not found');
+        alert("User not found");
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -170,70 +177,80 @@ const SurveyPage = () => {
         };
 
         const response = await fetch(`http://localhost:8000/survey/${purchaseId}`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(surveyData),
         });
         if (!response.ok) {
-          throw new Error('Failed to submit survey');
+          throw new Error("Failed to submit survey");
         }
       }
 
       // purchasesテーブルのsurvey_completionを1に更新
       await fetch(`http://localhost:8000/purchase/${purchaseId}/complete`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      toast.success('回答ありがとうございます！');
-      router.push('/purchaselog'); // 回答完了後に/purchaselogに遷移
+      toast.success("回答ありがとうございます！", {
+        onClose: () => router.push("/purchaselog"), // ポップアップが閉じられた後に遷移
+      });
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Error submitting survey');
+      console.error("Error:", error);
+      toast.error("Error submitting survey");
     }
   };
 
   if (!purchaseId) return <p>Loading...</p>;
 
   return (
-    <div className="relative">
-      <Navbar /> {/* Navbarコンポーネントを表示 */}
-      <div className="container mx-auto p-4 mt-16">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold mr-4">銘柄アンケート（{purchaseDate}購入分）</h1> {/* 購入日を表示 */}
-            <form onSubmit={handleSubmit}>
-              <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">回答する</button>
-            </form>
-          </div>
+    <div className="relative min-h-screen bg-gray-100">
+      <div className="sticky top-0 z-50">
+        {" "}
+        {/* Navbarをstickyにして固定 */}
+        <Navbar /> {/* Navbarを表示 */}
+      </div>
+      <div className="container mx-auto p-6 mt-16">
+        <div className="mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-800">
+            銘柄アンケート <span className="text-sm text-gray-500">（{purchaseDate}購入分）</span>
+          </h1>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {brands.map((brand) => (
-            <div key={brand.brand_id} className="relative border p-4 rounded shadow">
-              <div className="relative z-20">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <img src={brand.brand_logo_url} alt={brand.brand_name} className="w-12 h-12 mr-2" />
-                    <h2 className="text-left text-xl font-semibold">{brand.brand_name}</h2>
-                  </div>
-                </div>
-                <div className="flex justify-center mb-4 py-5">
-                  <RadarChartForSurvey
-                    items={items}
-                    formData={formData[brand.brand_id] || {}}
-                    onPreferenceChange={(itemId, value) => handlePreferenceChange(brand.brand_id, itemId, value)}
-                    defaultScores={averageScores[brand.brand_id] || {}} // 追加
-                  />
-                </div>
+            <div key={brand.brand_id} className="relative border p-6 bg-white rounded-lg shadow-lg transition-transform transform hover:scale-105 hover:shadow-2xl">
+              <div className="flex flex-col items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">{brand.brand_name}</h2>
+                <img src={brand.brand_logo_url} alt={brand.brand_name} className="w-20 h-20 mb-4 object-cover rounded-full border-2 border-amber-600" />
+              </div>
+              <div className="relative z-20 flex justify-center">
+                <RadarChartForSurvey
+                  items={items}
+                  formData={formData[brand.brand_id] || {}}
+                  onPreferenceChange={(itemId, value) => handlePreferenceChange(brand.brand_id, itemId, value)}
+                  defaultScores={averageScores[brand.brand_id] || {}}
+                />
               </div>
             </div>
           ))}
         </div>
-        <ToastContainer />
+        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-50">
+          <form onSubmit={handleSubmit}>
+            <button
+              type="submit"
+              className="bg-gradient-to-r bg-amber-600 hover:amber-700 text-white py-2 px-36 rounded-full shadow-xl transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center space-x-3 text-lg relative overflow-hidden"
+            >
+              <FaCheckCircle className="text-white text-2xl" />
+              <span>回答する</span>
+              <div className="absolute inset-0 w-full h-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-500"></div>
+            </button>
+          </form>
+        </div>
+        <ToastContainer autoClose={1000} />
       </div>
     </div>
   );

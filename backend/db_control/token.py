@@ -12,7 +12,7 @@ import os
 from typing import Annotated
 from sqlalchemy.orm import mapped_column, Mapped
 
-from db_control.schemas import UpdatePasswordRequest, LoginRequest
+from db_control.schemas import UpdatePasswordRequest, LoginRequest, UserNameResponse
 
 # .env の読み込み
 load_dotenv()
@@ -137,3 +137,16 @@ async def read_users_me(current_user_id: int = Depends(get_current_user_id)):
 @router.get("/test_jwt/")
 def get_test_jwt(user_id: int = Depends(get_current_user_id)):
     return user_id
+
+
+# ユーザー名の取得用（Navbar用）
+@router.get("/username/", response_model=UserNameResponse)
+def get_username(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    # Userテーブルからuser_idに該当するユーザーを取得
+    user = db.query(User).filter(User.user_id == user_id).first()
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # user_nameをレスポンスモデルに沿って返す
+    return {"user_name": user.user_name}

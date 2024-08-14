@@ -130,6 +130,7 @@ class SurveySubmission(BaseModel):
 
 
 class UserWithAgeGender(BaseModel):
+    user_name: str
     age: int
     gender: int
 
@@ -194,3 +195,7 @@ class Purchaselog(BaseModel):
     total_cans: int
     survey_completion: bool
     details: List[PurchaseItem]
+
+
+class UserNameResponse(BaseModel):
+    user_name: str

@@ -63,7 +63,7 @@ const Login = () => {
                 <img src="/x.png" alt="X" className="h-5 w-5 ml-4 mr-2" />
                 <span className="flex-grow text-center">Xでログイン</span>
               </button>
-              <button className="group relative w-full flex items-center py-2 px-4 border border-transparent rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none btn-line">
+              <button className="group relative w-full flex items-center py-2 px-4 border border-transparent rounded-md text-white bg-green-500 hover:bg-green-700 focus:outline-none btn-line">
                 <img src="/LINE.png" alt="LINE" className="h-6 w-6 ml-4 mr-2" />
                 <span className="flex-grow text-center">LINEでログイン</span>
               </button>

@@ -4,7 +4,7 @@ import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
 import { createPurchase } from "./createPurchase";
-import Navbar from "./Navbar"; // Navbarコンポーネントのインポート
+import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
 import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
 import PurchaseSetContainer from "./PurchaseSetContainer"; //買い物かごのコンポーネント
 import { jwtDecode } from "jwt-decode";
@@ -128,9 +128,11 @@ export default function Home() {
     fetchData("craft");
     //トークン情報を取得
     const token = localStorage.getItem("token") as string;
-    setJwt(token);
-    const decodedToken = jwtDecode<DecodedToken>(token);
-    setUserId(Number(decodedToken.sub));
+    if (token) {
+      setJwt(token);
+      const decodedToken = jwtDecode<DecodedToken>(token);
+      setUserId(Number(decodedToken.sub));
+    }
   }, []);
 
   useEffect(() => {

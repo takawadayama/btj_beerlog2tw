@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import axios, { AxiosError } from 'axios';
-import Navbar from './Navbar'; // Navbarコンポーネントのインポート
-import ProfileContainer from './ProfileContainer'; // ProfileContainerコンポーネントのインポート
-import PhotosContainer from './PhotosContainer'; // PhotosContainerコンポーネントのインポート
+import { useState, useEffect } from "react";
+import axios, { AxiosError } from "axios";
+import Navbar from "../../common/Navbar"; // Navbarコンポーネントのインポート
+import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
+import PhotosContainer from "./PhotosContainer"; // PhotosContainerコンポーネントのインポート
 
 interface User {
   user_id: number;
@@ -35,9 +35,9 @@ export default function UserPage() {
 
   // JWTからuser_idを取得する関数 (ログイン機能実装後に有効化)
   const fetchUserIdFromJWT = () => {
-    const token = localStorage.getItem('token'); // JWTトークンをローカルストレージから取得
+    const token = localStorage.getItem("token"); // JWTトークンをローカルストレージから取得
     if (token) {
-      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
+      const decodedToken: any = JSON.parse(atob(token.split(".")[1]));
       return decodedToken.sub; // ここでJWTのペイロードからuser_idを取得
     }
     return null;
@@ -57,12 +57,12 @@ export default function UserPage() {
     setError(null);
     try {
       const response = await axios.get(`http://localhost:8000/user_with_photos`, {
-        params: { user_id: id }
+        params: { user_id: id },
       });
       setUserWithPhotos(response.data);
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ErrorResponse>;
-      setError(axiosError.response?.data?.detail || 'User not found or an error occurred');
+      setError(axiosError.response?.data?.detail || "User not found or an error occurred");
     } finally {
       setLoading(false);
     }

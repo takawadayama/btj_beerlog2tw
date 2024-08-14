@@ -212,7 +212,7 @@ const SurveyPage = () => {
       <div className="sticky top-0 z-50">
         {" "}
         {/* Navbarをstickyにして固定 */}
-        <Navbar userName={userName} /> {/* userNameを渡してNavbarを表示 */}
+        <Navbar /> {/* Navbarを表示 */}
       </div>
       <div className="container mx-auto p-6 mt-16">
         <div className="mb-6">

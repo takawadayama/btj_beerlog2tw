@@ -54,6 +54,12 @@ const Navbar: React.FC = () => {
     router.push("/user");
   };
 
+  const handleLogoutHome = () => {
+    localStorage.removeItem("token"); // JWTをローカルストレージから削除
+    setUserName(null);
+    router.push("/"); // ログイン画面へ戻る
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token"); // JWTをローカルストレージから削除
     router.push("/login"); // ログイン画面へ戻る
@@ -83,7 +89,7 @@ const Navbar: React.FC = () => {
           <button onClick={handleMyRedirect} className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">
             マイページ
           </button>
-          <button onClick={handleLogout} className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">
+          <button onClick={handleLogoutHome} className="bg-amber-600 text-white py-2 px-4 rounded-xl hover:bg-amber-700 focus:outline-none transition-colors duration-200">
             ログアウト
           </button>
         </>
@@ -146,7 +152,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-30 bg-gray-50 border-b border-gray-400">
+    <nav className="fixed top-0 right-0 left-0 z-30 bg-gray-50 bg-opacity-80 border-b border-gray-400">
       <div className="flex justify-between items-center p-4">
         <div className="flex space-x-4 ml-20 items-center">
           <Link href="/" legacyBehavior>

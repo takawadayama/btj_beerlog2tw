@@ -297,19 +297,6 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   {nationalSelectedSet && <span className="text-lg font-semibold">{nationalSelectedSet.set_name}</span>}
-                  {/* 再提案ボタンの追加 */}
-                  <button
-                    className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 ml-auto"
-                    onClick={() => {
-                      if (nationalSelectedSet) {
-                        fetchRecommendations(nationalSelectedSet.set_name, nationalSelectedSet.ec_set_id, "national", nationalCraftRatio.national, nationalKinds, ngList);
-                      } else {
-                        console.error("nationalSelectedSet is undefined");
-                      }
-                    }}
-                  >
-                    再提案
-                  </button>
                   <button className="btn btn-outline ml-auto" onClick={ResetNationalSetSelection}>
                     セット選択に戻る
                   </button>
@@ -361,19 +348,6 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   {craftSelectedSet && <span className="text-lg font-semibold">{craftSelectedSet.set_name}</span>}
-                  {/* 再提案ボタンの追加 */}
-                  <button
-                    className=" bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 ml-auto"
-                    onClick={() => {
-                      if (craftSelectedSet) {
-                        fetchRecommendations(craftSelectedSet.set_name, craftSelectedSet.ec_set_id, "craft", nationalCraftRatio.craft, craftKinds, ngList);
-                      } else {
-                        console.error("craftSelectedSet is undefined");
-                      }
-                    }}
-                  >
-                    再提案
-                  </button>
                   <button className="btn btn-outline ml-auto" onClick={ResetCraftSetSelection}>
                     セット選択に戻る
                   </button>

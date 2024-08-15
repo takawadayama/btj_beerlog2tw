@@ -4,9 +4,9 @@ import { getEcSets } from "./getECSets";
 import { getRecommendations } from "./getRecommend";
 import { useRouter } from "next/navigation";
 import { createPurchase } from "./createPurchase";
-import Navbar from "../common/Navbar"; // Navbarコンポーネントのインポート
-import ProfileContainer from "./ProfileContainer"; // ProfileContainerコンポーネントのインポート
-import PurchaseSetContainer from "./PurchaseSetContainer"; //買い物かごのコンポーネント
+import Navbar from "../common/Navbar"; 
+import ProfileContainer from "./ProfileContainer"; 
+import PurchaseSetContainer from "./PurchaseSetContainer"; 
 import { jwtDecode } from "jwt-decode";
 
 import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSubSetItem, PurchaseSetItem, NgList, Brand, EcBrandItem, DecodedToken } from "../../types/purchase_types";
@@ -41,7 +41,6 @@ export default function Home() {
   const [nationalSetDetails, setNationalSetDetails] = useState<PurchaseItem[]>([]);
   const [craftSetDetails, setCraftSetDetails] = useState<PurchaseItem[]>([]);
 
-  //おススメセットの種類を指定
   const [nationalKinds, setNationalKinds] = useState<number>(2);
   const [craftKinds, setCraftKinds] = useState<number>(3);
   const nationalKindsOptions = [1, 2, 3];
@@ -52,6 +51,10 @@ export default function Home() {
   const [purchaseSetItemAll, setPurchaseSetItemAll] = useState<PurchaseSetItem[]>([]);
   const [jwt, setJwt] = useState<string>("");
   const [userId, setUserId] = useState<number | undefined>(undefined);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSetDetails, setSelectedSetDetails] = useState<RecommendResponseItem[]>([]);
+  const [selectedSetDescription, setSelectedSetDescription] = useState("");
 
   const router = useRouter();
 
@@ -68,59 +71,71 @@ export default function Home() {
     }
   };
 
-  // おススメセットを選択した時の処理
-  const fetchRecommendations = async (set_name: string, ec_set_id: number, category: string, cans: number, kinds: number, ngList: NgList[]) => {
+  const fetchRecommendations = async (
+    set_name: string,
+    ec_set_id: number,
+    category: string, // ここでcategoryを引数として受け取ります
+    cans: number,
+    kinds: number,
+    ngList: NgList[]
+) => {
     try {
-      const ngIdList: number[] = ngList?.map((item) => item.ng_id);
-      const data = await getRecommendations({
-        ec_set_id,
-        category,
-        cans,
-        kinds,
-        ng_id: ngIdList,
-      });
-      if (category === "national") {
-        setNationalSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
-        setNationalRecommendations(data);
+        const ngIdList: number[] = ngList?.map((item) => item.ng_id);
+        const data = await getRecommendations({
+            ec_set_id,
+            category,
+            cans,
+            kinds,
+            ng_id: ngIdList,
+        });
 
-        // 現在の状態は無視して、dataの内容で上書きする
-        const updatedDetails = data.map((item) => ({
-          ...item,
-          ec_brand_id: item.ec_brand_id,
-          category: "national",
-          name: item.name,
-          price: item.price,
-          ec_set_id: ec_set_id,
+        const updatedData = data.map((item) => ({
+            ...item,
+            ec_set_id: ec_set_id, // ec_set_id を追加
+            category: category, // category フィールドを追加
         }));
-        setNationalSetDetails(updatedDetails);
 
-        setIsNationalSelected(true);
-      } else if (category === "craft") {
-        setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
-        setCraftRecommendations(data);
+        if (category === "national") {
+            setNationalSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
+            setNationalRecommendations(updatedData); // 修正されたデータを使用します
 
-        // 現在の状態は無視して、dataの内容で上書きする
-        const updatedDetails = data.map((item) => ({
-          ...item,
-          ec_brand_id: item.ec_brand_id,
-          category: "craft",
-          name: item.name,
-          price: item.price,
-          ec_set_id: ec_set_id,
-        }));
-        setCraftSetDetails(updatedDetails);
+            setNationalSetDetails(updatedData); // 修正されたデータを使用します
 
-        setIsCraftSelected(true);
-      }
+            setSelectedSetDetails(updatedData);
+            setSelectedSetDescription(
+                nationalEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || ""
+            );
+
+            setIsNationalSelected(true);
+            setIsModalOpen(true);
+        } else if (category === "craft") {
+            setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
+            setCraftRecommendations(updatedData); // 修正されたデータを使用します
+
+            setCraftSetDetails(updatedData); // 修正されたデータを使用します
+
+            setSelectedSetDetails(updatedData);
+            setSelectedSetDescription(
+                craftEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || ""
+            );
+
+            setIsCraftSelected(true);
+            setIsModalOpen(true);
+        }
     } catch (error) {
-      console.error("Failed to fetch recommendations:", error);
+        console.error("Failed to fetch recommendations:", error);
     }
+};
+
+
+
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   useEffect(() => {
     fetchData("national");
     fetchData("craft");
-    //トークン情報を取得
     const token = localStorage.getItem("token") as string;
     if (token) {
       setJwt(token);
@@ -140,11 +155,15 @@ export default function Home() {
   const handleAddToCart = () => {
     const combinedCans = nationalSet.cans + craftSet.cans;
 
+      // デバッグ用のログ出力
+    console.log("National Set Details: ", nationalSetDetails);
+    console.log("Craft Set Details: ", craftSetDetails);
+
     if (combinedCans === totalCans) {
       const newPurchaseSetItem: PurchaseSetItem = {
         setDetails: {
           cans: combinedCans,
-          set_num: 1, // デフォルトで1セット購入（後で増減可能にする）
+          set_num: 1,
         },
         national_set: {
           cans: nationalSet.cans,
@@ -171,7 +190,6 @@ export default function Home() {
   };
 
   const ResetNationalSetSelection = () => {
-    // national選択に関連するものを初期化
     setNationalSet({ cans: 0, set_name: "", set_id: 0 });
     setNationalSelectedSet(undefined);
     setNationalSetDetails([]);
@@ -179,21 +197,18 @@ export default function Home() {
   };
 
   const ResetCraftSetSelection = () => {
-    // craft選択に関連するものを初期化
     setCraftSet({ cans: 0, set_name: "", set_id: 0 });
     setCraftSelectedSet(undefined);
     setCraftSetDetails([]);
     setIsCraftSelected(false);
   };
 
-  // 合計金額の受け取った後の処理は改めて考える
   const handlePurchaseItemAll = async () => {
     try {
+      // デバッグ用のログ出力
+      console.log("Purchase Set Items: ", purchaseSetItemAll);
       const data = await createPurchase(purchaseSetItemAll, jwt);
-      // アラートを表示
       alert("合計金額は" + data.total_amount + "円です");
-
-      // /userページへ遷移
       router.push("/user");
     } catch (error) {
       console.error("Error creating purchase:", error);
@@ -201,198 +216,157 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-4 bg-gray-100 min-h-screen pt-20 mt-5">
+    <div className="container mx-auto p-4 bg-gray-100 min-h-screen pt-10 mt-5">
       <Navbar /> {/* Navbarコンポーネントの表示 */}
-      <div className="bg-gray-200 rounded p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10 pt-10 pr-10">
-        {/* 左 */}
-        <div className="card bg-white shadow-md rounded-lg p-4 mb-4">
-          <h1 className="text-2xl font-bold mb-4">条件選択</h1>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">全体の本数</label>
-            <select
-              value={totalCans}
-              onChange={(e) => {
-                setTotalCans(Number(e.target.value));
-                ResetNationalSetSelection();
-                ResetCraftSetSelection();
-              }}
-              className="select select-bordered w-full"
-            >
+      <div className="flex justify-between items-start bg-gray-100 rounded p-4 gap-4 mb-10 pt-10 pr-10">
+        {/* 左 - 条件選択 */}
+        <div className="card bg-white shadow-md rounded-lg pt-2 px-4 pb-20 w-1/6">
+          <h1 className="text-xl font-bold mb-4 text-amber-600" style={{ fontFamily: "Poppins, sans-serif" }}>
+            Step1{" "}<span style={{ display: "block" }}>お届け数量を選択</span>
+          </h1>
+
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">全体の本数</label>
+            <div className="grid grid-cols-2 gap-2">
               {Object.keys(nationalCraftOptions).map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
+                <button
+                  key={key}
+                  onClick={() => {
+                    setTotalCans(Number(key));
+                    ResetNationalSetSelection();
+                    ResetCraftSetSelection();
+                  }}
+                  className={`py-2 px-4 rounded-lg text-white font-bold ${
+                    totalCans === Number(key) ? "bg-amber-600" : "bg-gray-300"
+                  } hover:bg-amber-500 transition-all duration-200`}
+                >
+                  {key}本
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">ナショナル本数とクラフト本数</label>
-            <select
-              value={JSON.stringify(nationalCraftRatio)}
-              onChange={(e) => {
-                setNationalCraftRatio(JSON.parse(e.target.value)); //選択した文字列をjson形式に変換して格納
-                ResetNationalSetSelection();
-                ResetCraftSetSelection();
-              }}
-              className="select select-bordered w-full"
-            >
-              {/* デフォルトで表示される値をリストの３番目に変更 */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">ナショナル：クラフト</label>
+            <div className="grid grid-cols-2 gap-2">
               {nationalCraftOptions[totalCans].map((option, index) => (
-                <option key={index} value={JSON.stringify(option)}>
+                <button
+                  key={index}
+                  onClick={() => {
+                    setNationalCraftRatio(option);
+                    ResetNationalSetSelection();
+                    ResetCraftSetSelection();
+                  }}
+                  className={`py-2 px-4 rounded-lg text-white font-bold ${
+                    JSON.stringify(nationalCraftRatio) === JSON.stringify(option)
+                      ? "bg-amber-600"
+                      : "bg-gray-300"
+                  } hover:bg-amber-500 transition-all duration-200`}
+                >
                   {option.national}:{option.craft}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">ナショナルの種類数</label>
-            <select
-              value={nationalKinds}
-              onChange={(e) => {
-                setNationalKinds(Number(e.target.value));
-                ResetNationalSetSelection();
-              }}
-              className="select select-bordered w-full"
-            >
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">ナショナル銘柄数</label>
+            <div className="flex justify-between">
               {nationalKindsOptions.map((option) => (
-                <option key={option} value={option}>
+                <button
+                  key={option}
+                  onClick={() => {
+                    setNationalKinds(option);
+                    ResetNationalSetSelection();
+                  }}
+                  className={`py-2 px-4 rounded-lg text-white font-bold ${
+                    nationalKinds === option ? "bg-amber-600" : "bg-gray-300"
+                  } hover:bg-amber-500 transition-all duration-200`}
+                >
                   {option}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">クラフトの種類数</label>
-            <select
-              value={craftKinds}
-              onChange={(e) => {
-                setCraftKinds(Number(e.target.value));
-                ResetCraftSetSelection();
-              }}
-              className="select select-bordered w-full"
-            >
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">クラフト銘柄数</label>
+            <div className="flex justify-between">
               {craftKindsOptions.map((option) => (
-                <option key={option} value={option}>
+                <button
+                  key={option}
+                  onClick={() => {
+                    setCraftKinds(option);
+                    ResetCraftSetSelection();
+                  }}
+                  className={`py-2 px-4 rounded-lg text-white font-bold ${
+                    craftKinds === option ? "bg-amber-600" : "bg-gray-300"
+                  } hover:bg-amber-500 transition-all duration-200`}
+                >
                   {option}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
-        {/* 右 */}
-        <div className="shadow-md rounded-lg p-4 mb-4 overflow-hidden">
-          <div className="card mb-4 bg-gray-200 p-8 pt-20 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
-            {userId !== undefined && <ProfileContainer user_id={userId} />}
+
+        {/* 中央 - レーダーチャートはProfileContainerの中に移動 */}
+        <div className="card bg-white shadow-md rounded-lg p-28 w-2/5 relative">
+          <h2 className="absolute top-2 left-4 text-xl font-bold text-amber-600" style={{ fontFamily: "Poppins, sans-serif" }}>
+            Step2{" "}<span style={{ display: "block" }}>好みを確認</span>
+          </h2>
+          {userId !== undefined && <ProfileContainer user_id={userId} />}
+        </div>
+
+        {/* 右 - ナショナルブランドとクラフトブランドのアルゴリズム選択 */}
+        <div className="card bg-white shadow-md rounded-lg pt-2 pb-6 px-4 w-3/5">
+          <h2 className="text-xl font-bold text-amber-600 mb-2" style={{ fontFamily: "Poppins, sans-serif" }}>
+            Step3 びあログおすすめを選択
+          </h2>
+          <h2 className="text-lg text-gray-600 font-bold">ナショナルビール</h2>
+          <div className="overflow-y-auto h-60 bg-white rounded-lg shadow-md p-4">
+            <div className="grid grid-cols-2 gap-4">
+              {nationalEcSets.map((ecSet) => (
+                <div key={ecSet.ec_set_id}>
+                  <button
+                    onClick={() => {
+                      setNationalSelectedSet(ecSet);
+                      fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "national", nationalCraftRatio.national, nationalKinds, ngList);
+                    }}
+                    className={`py-2 px-4 rounded-lg text-white font-bold w-full ${
+                      nationalSelectedSet?.ec_set_id === ecSet.ec_set_id ? "bg-amber-600" : "bg-gray-300"
+                    } hover:bg-amber-500 transition-all duration-200`}
+                  >
+                    {ecSet.set_name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <h2 className="text-lg text-gray-600 font-bold mt-5">クラフトビール</h2>
+          <div className="overflow-y-auto h-60 bg-white rounded-lg shadow-md p-4">
+            <div className="grid grid-cols-2 gap-4">
+              {craftEcSets.map((ecSet) => (
+                <div key={ecSet.ec_set_id}>
+                  <button
+                    onClick={() => {
+                      setCraftSelectedSet(ecSet);
+                      fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "craft", nationalCraftRatio.craft, craftKinds, ngList);
+                    }}
+                    className={`py-2 px-4 rounded-lg text-white font-bold w-full ${
+                      craftSelectedSet?.ec_set_id === ecSet.ec_set_id ? "bg-amber-600" : "bg-gray-300"
+                    } hover:bg-amber-500 transition-all duration-200`}
+                  >
+                    {ecSet.set_name}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
-          <h2 className="text-xl font-bold mb-2">National</h2>
-          <div className="overflow-y-auto h-64 bg-white rounded-lg shadow-md p-4">
-            {isNationalSelected ? (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  {nationalSelectedSet && <span className="text-lg font-semibold">{nationalSelectedSet.set_name}</span>}
-                  <button className="btn btn-outline ml-auto" onClick={ResetNationalSetSelection}>
-                    セット選択に戻る
-                  </button>
-                </div>
-                {nationalRecommendations.map((item) => (
-                  <div key={item.ec_brand_id} className="card card-compact bg-blue-100 shadow-xl mb-2 p-1">
-                    <div className="card-body p-1 flex flex-row justify-between items-center">
-                      <h3 className="card-title text-sm font-semibold">{item.name}</h3>
-                      <p className="text-xs">{item.description}</p>
-                      <div className="flex items-center space-x-4">
-                        <p className="text-xs">Price: {item.price}</p>
-                        <p className="text-xs">Count: {item.count}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              nationalEcSets.map((ecSet) => (
-                <div key={ecSet.ec_set_id} className="card card-compact bg-blue-100 shadow-xl mb-2 p-1">
-                  <div className="card-body p-2 flex flex-row items-center">
-                    <div className="flex-grow">
-                      <h3 className="card-title text-sm font-semibold">{ecSet.set_name}</h3>
-                      <p className="text-xs">{ecSet.set_description}</p>
-                    </div>
-                    {/* 本数が0本の時の時にはボタンを押せなくする */}
-                    <div className="ml-4">
-                      <button
-                        className={`py-2 px-4 rounded ${nationalCraftRatio.national === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-amber-600 hover:bg-amber-700 text-white"}`}
-                        onClick={() => {
-                          setNationalSelectedSet(ecSet);
-                          fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "national", nationalCraftRatio.national, nationalKinds, ngList);
-                        }}
-                        disabled={nationalCraftRatio.national === 0}
-                      >
-                        これを選択する
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold mb-2">Craft</h2>
-          <div className="overflow-y-auto h-64 bg-white rounded-lg shadow-md p-4">
-            {isCraftSelected ? (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  {craftSelectedSet && <span className="text-lg font-semibold">{craftSelectedSet.set_name}</span>}
-                  <button className="btn btn-outline ml-auto" onClick={ResetCraftSetSelection}>
-                    セット選択に戻る
-                  </button>
-                </div>
-                {craftRecommendations.map((item) => (
-                  <div key={item.ec_brand_id} className="card card-compact bg-green-100 shadow-xl mb-2 p-1">
-                    <div className="card-body p-1 flex flex-row justify-between items-center">
-                      <h3 className="card-title text-sm font-semibold">{item.name}</h3>
-                      <p className="text-xs">{item.description}</p>
-                      <div className="flex items-center space-x-4">
-                        <p className="text-xs">Price: {item.price}</p>
-                        <p className="text-xs">Count: {item.count}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              craftEcSets.map((ecSet) => (
-                <div key={ecSet.ec_set_id} className="card card-compact bg-green-100 shadow-xl mb-2 p-1">
-                  <div className="card-body p-2 flex flex-row items-center">
-                    <div className="flex-grow">
-                      <h3 className="card-title text-sm font-semibold">{ecSet.set_name}</h3>
-                      <p className="text-xs">{ecSet.set_description}</p>
-                    </div>
-                    {/* 本数が0本の時の時にはボタンを押せなくする */}
-                    <div className="ml-4">
-                      <button
-                        className={`py-2 px-4 rounded ${nationalCraftRatio.craft === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-amber-600 hover:bg-amber-700 text-white"}`}
-                        onClick={() => {
-                          setCraftSelectedSet(ecSet);
-                          fetchRecommendations(ecSet.set_name, ecSet.ec_set_id, "craft", nationalCraftRatio.craft, craftKinds, ngList);
-                        }}
-                        disabled={nationalCraftRatio.craft === 0}
-                      >
-                        これを選択する
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+
       <div className="flex space-x-4 mt-4 mb-4">
         <button onClick={handleAddToCart} className="bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700">
           買い物かごに入れる
@@ -401,8 +375,38 @@ export default function Home() {
           購入する
         </button>
       </div>
-      {/* purchaseSetItemAllの表示 */}
-      <PurchaseSetContainer purchaseSetItemAll={purchaseSetItemAll} setPurchaseSetItemAll={setPurchaseSetItemAll} />
+
+      <PurchaseSetContainer
+        purchaseSetItemAll={purchaseSetItemAll}
+        setPurchaseSetItemAll={setPurchaseSetItemAll}
+      />
+
+      {/* モーダルウィンドウ */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-3/4 max-h-full overflow-auto">
+            <h2 className="text-lg font-bold mb-4">{nationalSelectedSet?.set_name || craftSelectedSet?.set_name}</h2>
+            <p className="text-sm text-gray-600 mb-4">{selectedSetDescription}</p>
+            {selectedSetDetails.map((item) => (
+              <div key={item.ec_brand_id} className="mb-4">
+                <h3 className="text-sm font-semibold">{item.name}</h3>
+                <p className="text-xs">価格: {item.price} 円</p>
+                <p className="text-xs">本数: {item.count} 本</p>
+              </div>
+            ))}
+            <button
+              onClick={closeModal}
+              className="mt-4 bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700"
+            >
+              戻る
+            </button>
+          </div>
+          <div
+            className="fixed inset-0 opacity-50 z-40"
+            onClick={closeModal}
+          ></div>
+        </div>
+      )}
     </div>
   );
 }

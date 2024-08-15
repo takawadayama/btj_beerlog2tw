@@ -18,6 +18,8 @@ export interface RecommendResponseItem {
   description: string;
   price: number;
   count: number;
+  category: string;  // 追加
+  ec_set_id: number; // 追加
 }
 
 export interface NationalCraftOption {

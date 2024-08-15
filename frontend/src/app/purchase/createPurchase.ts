@@ -8,6 +8,7 @@ axios.defaults.headers.post["Content-Type"] = "application/json";
 
 export const createPurchase = async (purchaseSetItemAll: PurchaseSetItem[], jwt: string) => {
   try {
+    console.log("Sending data:", purchaseSetItemAll); // データの確認
     const response = await axios.post("/purchase", purchaseSetItemAll, {
       headers: {
         Authorization: `Bearer ${jwt}`,

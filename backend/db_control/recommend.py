@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 
-from db_control.mymodels import Brand, Preference, User, EC_Brand, Survey, EC_Set
+from db_control.mymodels import Brand, Preference, User, EC_Brand, Survey, EC_Set, Purchase, PurchaseDetail
 from db_control.connect import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -12,7 +12,9 @@ from typing import List
 # from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
 
 from scipy.spatial.distance import cosine
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import math
+import random
 
 router = APIRouter()
 
@@ -201,6 +203,254 @@ def recommend_preferred_products(user_id: int, category: str, cans: int, kinds: 
     return response_data
 
 
+# 最近１か月で購入されたec_brand_idを購入数が多い順にソートした結果を返す
+def recommendation_by_popularity(user_id: int, category: str, ng_id: list[int], db: Session):
+    # 1. Purchaseテーブルを確認して、date_timeが（本日から一か月前まで）の期間に当てはまるデータを抽出
+    one_month_ago = datetime.now() - timedelta(days=30)
+    recent_purchases = db.query(Purchase).filter(Purchase.date_time >= one_month_ago, Purchase.user_id == user_id).all()
+
+    # 2. 抽出した各データについてpurchase_idを用いて、PurchaseDetailテーブルを参照して、ng_idに含まれるbrand_idを除外
+    purchase_ids = [purchase.purchase_id for purchase in recent_purchases]
+    purchase_details = (
+        db.query(PurchaseDetail)
+        .filter(
+            PurchaseDetail.purchase_id.in_(purchase_ids),
+            PurchaseDetail.category == category,
+            ~PurchaseDetail.ec_brand_id.in_(ng_id),
+        )
+        .all()
+    )
+
+    # 3. 抽出された全PurchaseDetailを確認して、その中に入っている、ec_brand_idを重複なく取得
+    brand_counts = {}
+    for detail in purchase_details:
+        if detail.ec_brand_id not in brand_counts:
+            brand_counts[detail.ec_brand_id] = 0
+        brand_counts[detail.ec_brand_id] += 1
+
+    # 4. 3で作成したec_brand_idのそれぞれについて、個数を計算し、DataFrame形式で求める
+    data = {'ec_brand_id': list(brand_counts.keys()), 'score': list(brand_counts.values())}
+    df = pd.DataFrame(data)
+
+    # 5. "score"が昇順になるように結果をソートしたものを返す
+    df_sorted = df.sort_values(by='score', ascending=False)
+
+    return df_sorted
+
+
+def recommend_popular_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_by_popularity関数を用いて、結果を取得する（ng_idを引数に追加）
+    df_sorted = recommendation_by_popularity(user_id, category, ng_id, db)
+
+    # 2. 上位(kinds)個のデータを取得する際には、ng_listを取り除く必要はありません
+    top_kinds_df = df_sorted.head(kinds)
+
+    # 3. そのように得られたec_brand_idについて、EC_Brandテーブルを参照して、ec_brand_idが一致するデータを取得する
+    ec_brand_ids = top_kinds_df['ec_brand_id'].tolist()
+    result = db.query(EC_Brand).filter(EC_Brand.ec_brand_id.in_(ec_brand_ids)).all()
+
+    # 4. その結果を用いて、response_dataに変換して返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in result
+    ]
+
+    return response_data
+
+
+def split_kinds(kinds: int):
+    majority_kinds = math.ceil(kinds / 2)  # kindsの過半数を計算（端数は切り上げ）
+    minority_kinds = kinds - majority_kinds  # 残りの値を計算
+
+    return majority_kinds, minority_kinds
+
+
+def recommend_diverse_preferred_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_dfを取得
+    age, gender = get_user_age_and_gender(user_id, db)
+    recommendation_df = recommendation_by_cosine_similarity(user_id, age, gender, category, db)
+
+    # kindsをmajority_kindsとminority_kindsに分割
+    majority_kinds, minority_kinds = split_kinds(kinds)
+
+    # 2. minority_kindsが0の場合、処理をスキップする
+    if minority_kinds > 0:
+        # recommendation_dfからng_idに含まれるものを除き、上位(minority_kinds)個のbrand_idを取得
+        filtered_recommendation_df = recommendation_df[~recommendation_df['brand_id'].isin(ng_id)]
+        top_minor_brand_ids = filtered_recommendation_df.head(minority_kinds)['brand_id'].tolist()
+
+        # 3. EC_Brandテーブルから、top_minor_brand_idsに含まれるbrand_idに一致するものを抽出
+        minor_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(top_minor_brand_ids)).all()
+    else:
+        top_minor_brand_ids = []
+        minor_brands = []
+
+    # 4. EC_Brandテーブルから、brand_idが(ng_id + top_minor_brand_ids)に含まれないものをすべて抽出
+    excluded_brand_ids = ng_id + top_minor_brand_ids
+    remaining_brands = db.query(EC_Brand).filter(~EC_Brand.brand_id.in_(excluded_brand_ids)).all()
+
+    # 5. 残りのブランドからランダムに(majority_kinds)個を取得
+    if len(remaining_brands) > majority_kinds:
+        major_brands = random.sample(remaining_brands, majority_kinds)
+    else:
+        major_brands = remaining_brands
+
+    # 6. 3と5の結果をまとめる
+    combined_brands = minor_brands + major_brands
+
+    # 7. 整理してresponse_dataとして返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in combined_brands
+    ]
+
+    return response_data
+
+
+def recommend_adventurous_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_dfを取得
+    age, gender = get_user_age_and_gender(user_id, db)
+    recommendation_df = recommendation_by_cosine_similarity(user_id, age, gender, category, db)
+
+    # kindsをmajority_kindsとminority_kindsに分割
+    majority_kinds, minority_kinds = split_kinds(kinds)
+
+    # 2. minority_kindsが0の場合、処理をスキップする
+    if minority_kinds > 0:
+        # recommendation_dfからng_idに含まれるものを除き、上位(minority_kinds)個のbrand_idを取得
+        filtered_recommendation_df = recommendation_df[~recommendation_df['brand_id'].isin(ng_id)]
+        top_minor_brand_ids = filtered_recommendation_df.head(minority_kinds)['brand_id'].tolist()
+
+        # 3. EC_Brandテーブルから、top_minor_brand_idsに含まれるbrand_idに一致するものを抽出
+        minor_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(top_minor_brand_ids)).all()
+    else:
+        top_minor_brand_ids = []
+        minor_brands = []
+
+    # 4. recommendation_dfから（top_minor_brand_ids + ng_id）に含まれるものを除き、下位(majority_kinds)個のbrand_idを取得
+    excluded_brand_ids = ng_id + top_minor_brand_ids
+    remaining_recommendation_df = recommendation_df[~recommendation_df['brand_id'].isin(excluded_brand_ids)]
+    bottom_major_brand_ids = remaining_recommendation_df.tail(majority_kinds)['brand_id'].tolist()
+
+    # 5. EC_Brandテーブルから、bottom_major_brand_idsに含まれるbrand_idに一致するものを取得
+    major_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(bottom_major_brand_ids)).all()
+
+    # 6. 3と5の結果をまとめる
+    combined_brands = minor_brands + major_brands
+
+    # 7. 整理してresponse_dataとして返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in combined_brands
+    ]
+
+    return response_data
+
+
+def recommend_luxury_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_dfを取得
+    age, gender = get_user_age_and_gender(user_id, db)
+    recommendation_df = recommendation_by_cosine_similarity(user_id, age, gender, category, db)
+
+    # 2. ECブランドテーブルを参照して、categoryが一致し、かつng_idに含まれないbrand_idを持つデータを取得
+    all_brands = (
+        db.query(EC_Brand)
+        .filter(
+            EC_Brand.category == category,
+            ~EC_Brand.brand_id.in_(ng_id),
+        )
+        .all()
+    )
+
+    # 3. priceで降順にソートして、上位半分（小数点以下切り上げ）のbrand_idを取得
+    sorted_brands = sorted(all_brands, key=lambda x: x.price, reverse=True)
+    top_half_brands_count = math.ceil(len(sorted_brands) / 2)
+    top_half_brand_ids = [brand.brand_id for brand in sorted_brands[:top_half_brands_count]]
+
+    # 4. recommendation_dfから、top_half_brand_idsを含むものを抽出し、rec_scoreの上位(kinds)個のbrand_idを取得
+    filtered_recommendation_df = recommendation_df[recommendation_df['brand_id'].isin(top_half_brand_ids)]
+    top_kinds_df = filtered_recommendation_df.head(kinds)
+    selected_brand_ids = top_kinds_df['brand_id'].tolist()
+
+    # 5. EC_Brandテーブルから、selected_brand_idsに一致するものを取得
+    result = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(selected_brand_ids)).all()
+
+    # 6. 整理してresponse_dataとして返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in result
+    ]
+
+    return response_data
+
+
+def recommend_budget_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_dfを取得
+    age, gender = get_user_age_and_gender(user_id, db)
+    recommendation_df = recommendation_by_cosine_similarity(user_id, age, gender, category, db)
+
+    # 2. ECブランドテーブルを参照して、categoryが一致し、かつng_idに含まれないbrand_idを持つデータを取得
+    all_brands = (
+        db.query(EC_Brand)
+        .filter(
+            EC_Brand.category == category,
+            ~EC_Brand.brand_id.in_(ng_id),
+        )
+        .all()
+    )
+
+    # 3. priceで昇順にソートして、上位半分（小数点以下切り上げ）のbrand_idを取得
+    sorted_brands = sorted(all_brands, key=lambda x: x.price)
+    top_half_brands_count = math.ceil(len(sorted_brands) / 2)
+    top_half_brand_ids = [brand.brand_id for brand in sorted_brands[:top_half_brands_count]]
+
+    # 4. recommendation_dfから、top_half_brand_idsを含むものを抽出し、rec_scoreの上位(kinds)個のbrand_idを取得
+    filtered_recommendation_df = recommendation_df[recommendation_df['brand_id'].isin(top_half_brand_ids)]
+    top_kinds_df = filtered_recommendation_df.head(kinds)
+    selected_brand_ids = top_kinds_df['brand_id'].tolist()
+
+    # 5. EC_Brandテーブルから、selected_brand_idsに一致するものを取得
+    result = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(selected_brand_ids)).all()
+
+    # 6. 整理してresponse_dataとして返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in result
+    ]
+
+    return response_data
+
+
 @router.get("/ec_sets", response_model=List[ECSetItem])
 def get_ec_sets(category: str, db: Session = Depends(get_db)):
     ec_sets = get_ec_sets_by_category(db, category)
@@ -245,6 +495,26 @@ def recommend(
         # response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
 
         response_data = recommend_preferred_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 1:
+
+        response_data = recommend_popular_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 3:
+
+        response_data = recommend_diverse_preferred_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 4:
+
+        response_data = recommend_adventurous_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 5:
+
+        response_data = recommend_luxury_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 6:
+
+        response_data = recommend_budget_products(user_id, category, cans, kinds, ng_id, db)
 
     else:
 

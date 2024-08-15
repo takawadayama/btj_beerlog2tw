@@ -18,8 +18,9 @@ export interface RecommendResponseItem {
   description: string;
   price: number;
   count: number;
-  category: string;  // 追加
+  category: string; // 追加
   ec_set_id: number; // 追加
+  picture?: string; // OptionalとしてBase64エンコードされた画像データを追加
 }
 
 export interface NationalCraftOption {

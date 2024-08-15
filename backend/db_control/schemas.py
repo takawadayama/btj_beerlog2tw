@@ -53,6 +53,7 @@ class RecommendResponseItem(BaseModel):
     description: str
     price: int
     count: int
+    picture: Optional[str] = None
 
 
 class Brand(BaseModel):

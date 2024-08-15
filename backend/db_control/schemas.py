@@ -158,6 +158,7 @@ class PurchaseItem(BaseModel):
     price: int
     count: int
     ec_set_id: int
+    picture: Optional[str] = None
 
 
 class PurchaseSubSetItem(BaseModel):

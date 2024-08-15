@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from db_control.schemas import PurchaseSetItem, TransactionResponse, ECSearchResult, Purchaselog, PurchaseItem
 from typing import List
+import base64
 
 # from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
 
@@ -156,20 +157,33 @@ def get_purchaselog(db: Session = Depends(get_db), user_id: int = Depends(get_cu
             .all()
         )
 
-        details = [
-            PurchaseItem(
-                ec_brand_id=row.ec_brand_id,
-                category=row.category,
-                name=row.name,
-                price=row.price,
-                count=row.count,
-                ec_set_id=row.ec_set_id,
+        details = []
+
+        for row in purchase_details:
+            # EC_Brandテーブルからbrand_idを取得
+            ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == row.ec_brand_id).first()
+            picture = None
+            if ec_brand:
+                # Brandテーブルからbrand_pictureを取得し、Base64エンコード
+                brand = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+                if brand and brand.brand_picture:
+                    picture = base64.b64encode(brand.brand_picture).decode('utf-8')
+
+            # PurchaseItemを作成し、pictureを設定
+            details.append(
+                PurchaseItem(
+                    ec_brand_id=row.ec_brand_id,
+                    category=row.category,
+                    name=row.name,
+                    price=row.price,
+                    count=row.count,
+                    ec_set_id=row.ec_set_id,
+                    picture=picture,  # Base64エンコードされた画像データを追加
+                )
             )
-            for row in purchase_details
-        ]
 
         log = Purchaselog(
-            purchase_id=purchase.purchase_id,  # purchase_idを追加
+            purchase_id=purchase.purchase_id,
             date_time=purchase.date_time,
             total_amount=purchase.total_amount,
             total_cans=purchase.total_cans,

@@ -140,17 +140,15 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user_id }) => {
   };
 
   return (
-    <div>
-      {/* 右 */}
-      <div>
+    <div className="flex flex-col items-center"> {/* flexbox を使用して中央揃えにします */}
+      <div className="w-full flex justify-center"> {/* チャートを中央に配置 */}
         <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
-        <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
-          <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: "absolute", bottom: "1px", right: "10px" }}>
-            更新
-          </button>
-        </form>
       </div>
-
+      <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
+        <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: "absolute", bottom: "20px", right: "10px" }}>
+          更新
+        </button>
+      </form>
       <ToastContainer position="top-right" autoClose={1000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
   );

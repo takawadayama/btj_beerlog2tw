@@ -13,6 +13,8 @@ from typing import List
 
 from scipy.spatial.distance import cosine
 from datetime import date, datetime, timedelta
+import math
+import random
 
 router = APIRouter()
 
@@ -255,6 +257,61 @@ def recommend_popular_products(user_id: int, category: str, cans: int, kinds: in
     return response_data
 
 
+def split_kinds(kinds: int):
+    majority_kinds = math.ceil(kinds / 2)  # kindsの過半数を計算（端数は切り上げ）
+    minority_kinds = kinds - majority_kinds  # 残りの値を計算
+
+    return majority_kinds, minority_kinds
+
+
+def recommend_diverse_preferred_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
+    # 1. recommendation_dfを取得
+    age, gender = get_user_age_and_gender(user_id, db)
+    recommendation_df = recommendation_by_cosine_similarity(user_id, age, gender, category, db)
+
+    # kindsをmajority_kindsとminority_kindsに分割
+    majority_kinds, minority_kinds = split_kinds(kinds)
+
+    # 2. minority_kindsが0の場合、処理をスキップする
+    if minority_kinds > 0:
+        # recommendation_dfからng_idに含まれるものを除き、上位(minority_kinds)個のbrand_idを取得
+        filtered_recommendation_df = recommendation_df[~recommendation_df['brand_id'].isin(ng_id)]
+        top_minor_brand_ids = filtered_recommendation_df.head(minority_kinds)['brand_id'].tolist()
+
+        # 3. EC_Brandテーブルから、top_minor_brand_idsに含まれるbrand_idに一致するものを抽出
+        minor_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(top_minor_brand_ids)).all()
+    else:
+        top_minor_brand_ids = []
+        minor_brands = []
+
+    # 4. EC_Brandテーブルから、brand_idが(ng_id + top_minor_brand_ids)に含まれないものをすべて抽出
+    excluded_brand_ids = ng_id + top_minor_brand_ids
+    remaining_brands = db.query(EC_Brand).filter(~EC_Brand.brand_id.in_(excluded_brand_ids)).all()
+
+    # 5. 残りのブランドからランダムに(majority_kinds)個を取得
+    if len(remaining_brands) > majority_kinds:
+        major_brands = random.sample(remaining_brands, majority_kinds)
+    else:
+        major_brands = remaining_brands
+
+    # 6. 3と5の結果をまとめる
+    combined_brands = minor_brands + major_brands
+
+    # 7. 整理してresponse_dataとして返す
+    response_data = [
+        {
+            "ec_brand_id": brand.ec_brand_id,
+            "name": brand.name,
+            "description": brand.description,
+            "price": brand.price,
+            "count": int(cans / kinds),
+        }
+        for brand in combined_brands
+    ]
+
+    return response_data
+
+
 @router.get("/ec_sets", response_model=List[ECSetItem])
 def get_ec_sets(category: str, db: Session = Depends(get_db)):
     ec_sets = get_ec_sets_by_category(db, category)
@@ -303,6 +360,10 @@ def recommend(
     elif ec_set_id == 1:
 
         response_data = recommend_popular_products(user_id, category, cans, kinds, ng_id, db)
+
+    elif ec_set_id == 3:
+
+        response_data = recommend_diverse_preferred_products(user_id, category, cans, kinds, ng_id, db)
 
     else:
 

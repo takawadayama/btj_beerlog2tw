@@ -129,7 +129,8 @@ def search_brands(search_term: str, db: Session = Depends(get_db)):
 
 @router.get("/purchaselog", response_model=List[Purchaselog])
 def get_purchaselog(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
-    purchases = db.query(Purchase).filter(Purchase.user_id == user_id).all()
+    # Purchaseをdate_timeの降順で取得
+    purchases = db.query(Purchase).filter(Purchase.user_id == user_id).order_by(Purchase.date_time.desc()).all()
 
     if not purchases:
         raise HTTPException(status_code=404, detail="Purchases not found")

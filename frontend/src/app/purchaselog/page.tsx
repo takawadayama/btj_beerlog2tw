@@ -43,14 +43,11 @@ export default function PurchaselogPage() {
             <div key={index} className="border-2 border-amber-600 bg-amber-100 shadow-lg rounded-lg p-6 hover:bg-amber-500 transition-all duration-300">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  {/* <h2 className="text-xl font-bold mb-2">Purchase ID: {log.purchase_id}</h2> */}
                   <h2 className="text-xl font-bold mb-2">購入日: {new Date(log.date_time).toLocaleDateString()}</h2>
                   <h2 className="text-xl font-bold mb-2">合計金額: {log.total_amount} 円</h2>
                   <h2 className="text-xl font-bold mb-2">合計本数: {log.total_cans} 本</h2>
-                  {/* <h2 className="text-xl font-bold mb-2">Survey Completed: {log.survey_completion ? "Yes" : "No"}</h2> */}
                 </div>
                 <div>
-                  {/* ボタンをスタイルに合わせて修正 */}
                   <button
                     className={`text-amber-600 bg-white border-2 border-amber-600 text-lg font-semibold px-6 py-3 rounded-full shadow-md transform transition-all duration-300 ${
                       log.survey_completion ? "cursor-not-allowed opacity-50" : "hover:text-white hover:bg-amber-600"
@@ -80,7 +77,14 @@ export default function PurchaselogPage() {
                       <tbody>
                         {log.details.map((detail, i) => (
                           <tr key={i}>
-                            <td className="border px-4 py-2">{detail.name}</td>
+                            <td className="border px-4 py-2 flex items-center">
+                              {detail.picture ? (
+                                <img src={`data:image/png;base64,${detail.picture}`} alt={detail.name} className="w-10 h-10 object-cover rounded-full border-2 border-amber-600 mr-4" />
+                              ) : (
+                                <span className="w-10 h-10 rounded-full border-2 border-amber-600 mr-4 flex items-center justify-center">なし</span>
+                              )}
+                              <span>{detail.name}</span>
+                            </td>
                             <td className="border px-4 py-2">{detail.category}</td>
                             <td className="border px-4 py-2">{detail.price}</td>
                             <td className="border px-4 py-2">{detail.count}</td>

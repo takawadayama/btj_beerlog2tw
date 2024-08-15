@@ -43,6 +43,7 @@ export const nationalCraftOptions: Record<number, NationalCraftOption[]> = {
 export interface PurchaseItem {
   ec_brand_id: number;
   category: string;
+  picture?: string; // OptionalとしてBase64エンコードされた画像データを追加
   name: string;
   price: number;
   count: number;

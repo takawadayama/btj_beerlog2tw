@@ -291,9 +291,16 @@ def recommend_diverse_preferred_products(user_id: int, category: str, cans: int,
         top_minor_brand_ids = []
         minor_brands = []
 
-    # 4. EC_Brandテーブルから、brand_idが(ng_id + top_minor_brand_ids)に含まれないものをすべて抽出
+    # 4. EC_Brandテーブルから、brand_idが(ng_id + top_minor_brand_ids)に含まれず、かつcategoryが一致するものをすべて抽出
     excluded_brand_ids = ng_id + top_minor_brand_ids
-    remaining_brands = db.query(EC_Brand).filter(~EC_Brand.brand_id.in_(excluded_brand_ids)).all()
+    remaining_brands = (
+        db.query(EC_Brand)
+        .filter(
+            ~EC_Brand.brand_id.in_(excluded_brand_ids),
+            EC_Brand.category == category,
+        )
+        .all()
+    )
 
     # 5. 残りのブランドからランダムに(majority_kinds)個を取得
     if len(remaining_brands) > majority_kinds:

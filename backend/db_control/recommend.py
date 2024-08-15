@@ -204,14 +204,22 @@ def recommend_preferred_products(user_id: int, category: str, cans: int, kinds: 
 
 
 # 最近１か月で購入されたec_brand_idを購入数が多い順にソートした結果を返す
-def recommendation_by_popularity(user_id: int, category: str, db: Session):
+def recommendation_by_popularity(user_id: int, category: str, ng_id: list[int], db: Session):
     # 1. Purchaseテーブルを確認して、date_timeが（本日から一か月前まで）の期間に当てはまるデータを抽出
     one_month_ago = datetime.now() - timedelta(days=30)
     recent_purchases = db.query(Purchase).filter(Purchase.date_time >= one_month_ago, Purchase.user_id == user_id).all()
 
-    # 2. 抽出した各データについてpurchase_idを用いて、PurchaseDetailテーブルを参照して、そこからpurchase_idが一致するデータをすべて抽出
+    # 2. 抽出した各データについてpurchase_idを用いて、PurchaseDetailテーブルを参照して、ng_idに含まれるbrand_idを除外
     purchase_ids = [purchase.purchase_id for purchase in recent_purchases]
-    purchase_details = db.query(PurchaseDetail).filter(PurchaseDetail.purchase_id.in_(purchase_ids), PurchaseDetail.category == category).all()
+    purchase_details = (
+        db.query(PurchaseDetail)
+        .filter(
+            PurchaseDetail.purchase_id.in_(purchase_ids),
+            PurchaseDetail.category == category,
+            ~PurchaseDetail.ec_brand_id.in_(ng_id),
+        )
+        .all()
+    )
 
     # 3. 抽出された全PurchaseDetailを確認して、その中に入っている、ec_brand_idを重複なく取得
     brand_counts = {}
@@ -231,14 +239,13 @@ def recommendation_by_popularity(user_id: int, category: str, db: Session):
 
 
 def recommend_popular_products(user_id: int, category: str, cans: int, kinds: int, ng_id: list[int], db: Session):
-    # 1. recommendation_by_popularity関数を用いて、結果を取得する
-    df_sorted = recommendation_by_popularity(user_id, category, db)
+    # 1. recommendation_by_popularity関数を用いて、結果を取得する（ng_idを引数に追加）
+    df_sorted = recommendation_by_popularity(user_id, category, ng_id, db)
 
-    # 2. その結果から、ng_idに含まれるec_brand_idを持つデータを除いた上で、上位(kinds)個のデータを取得する
-    filtered_df = df_sorted[~df_sorted['ec_brand_id'].isin(ng_id)]
-    top_kinds_df = filtered_df.head(kinds)
+    # 2. 上位(kinds)個のデータを取得する際には、ng_listを取り除く必要はありません
+    top_kinds_df = df_sorted.head(kinds)
 
-    # 3. そのように得られたec_brand_idについて、EC_brandテーブルを参照して、ec_brand_idが一致するデータを取得する
+    # 3. そのように得られたec_brand_idについて、EC_Brandテーブルを参照して、ec_brand_idが一致するデータを取得する
     ec_brand_ids = top_kinds_df['ec_brand_id'].tolist()
     result = db.query(EC_Brand).filter(EC_Brand.ec_brand_id.in_(ec_brand_ids)).all()
 

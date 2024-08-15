@@ -191,6 +191,7 @@ def recommend_preferred_products(user_id: int, category: str, cans: int, kinds: 
     stmt = select(EC_Brand).where(EC_Brand.brand_id.in_(brand_ids))
     result = db.execute(stmt).scalars().all()
 
+    # resultに画像データを追加したものをresponse_dataとして返す
     response_data = []
 
     for brand in result:
@@ -267,16 +268,32 @@ def recommend_popular_products(user_id: int, category: str, cans: int, kinds: in
     result = db.query(EC_Brand).filter(EC_Brand.ec_brand_id.in_(ec_brand_ids)).all()
 
     # 4. その結果を用いて、response_dataに変換して返す
-    response_data = [
-        {
-            "ec_brand_id": brand.ec_brand_id,
-            "name": brand.name,
-            "description": brand.description,
-            "price": brand.price,
-            "count": int(cans / kinds),
-        }
-        for brand in result
-    ]
+    # resultに画像データを追加したものをresponse_dataとして返す
+    response_data = []
+
+    for brand in result:
+        # 1. EC_Brandテーブルを参照して、brand_idを取得
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == brand.ec_brand_id).first()
+
+        # 2. Brandテーブルを参照して、brand_idに一致するデータのbrand_pictureを取得
+        picture = None
+        if ec_brand:
+            brand_data = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+            if brand_data and brand_data.brand_picture:
+                # 3. データをBase64にエンコードしてresponse_dataに"picture"を追加
+                picture = base64.b64encode(brand_data.brand_picture).decode('utf-8')
+
+        # response_dataに追加
+        response_data.append(
+            {
+                "ec_brand_id": brand.ec_brand_id,
+                "name": brand.name,
+                "description": brand.description,
+                "price": brand.price,
+                "count": int(cans / kinds),
+                "picture": picture,  # Base64エンコードされた画像データを追加
+            }
+        )
 
     return response_data
 
@@ -326,19 +343,35 @@ def recommend_diverse_preferred_products(user_id: int, category: str, cans: int,
         major_brands = remaining_brands
 
     # 6. 3と5の結果をまとめる
-    combined_brands = minor_brands + major_brands
+    result = minor_brands + major_brands
 
     # 7. 整理してresponse_dataとして返す
-    response_data = [
-        {
-            "ec_brand_id": brand.ec_brand_id,
-            "name": brand.name,
-            "description": brand.description,
-            "price": brand.price,
-            "count": int(cans / kinds),
-        }
-        for brand in combined_brands
-    ]
+    # resultに画像データを追加したものをresponse_dataとして返す
+    response_data = []
+
+    for brand in result:
+        # 1. EC_Brandテーブルを参照して、brand_idを取得
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == brand.ec_brand_id).first()
+
+        # 2. Brandテーブルを参照して、brand_idに一致するデータのbrand_pictureを取得
+        picture = None
+        if ec_brand:
+            brand_data = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+            if brand_data and brand_data.brand_picture:
+                # 3. データをBase64にエンコードしてresponse_dataに"picture"を追加
+                picture = base64.b64encode(brand_data.brand_picture).decode('utf-8')
+
+        # response_dataに追加
+        response_data.append(
+            {
+                "ec_brand_id": brand.ec_brand_id,
+                "name": brand.name,
+                "description": brand.description,
+                "price": brand.price,
+                "count": int(cans / kinds),
+                "picture": picture,  # Base64エンコードされた画像データを追加
+            }
+        )
 
     return response_data
 
@@ -372,19 +405,35 @@ def recommend_adventurous_products(user_id: int, category: str, cans: int, kinds
     major_brands = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(bottom_major_brand_ids)).all()
 
     # 6. 3と5の結果をまとめる
-    combined_brands = minor_brands + major_brands
+    result = minor_brands + major_brands
 
     # 7. 整理してresponse_dataとして返す
-    response_data = [
-        {
-            "ec_brand_id": brand.ec_brand_id,
-            "name": brand.name,
-            "description": brand.description,
-            "price": brand.price,
-            "count": int(cans / kinds),
-        }
-        for brand in combined_brands
-    ]
+    # resultに画像データを追加したものをresponse_dataとして返す
+    response_data = []
+
+    for brand in result:
+        # 1. EC_Brandテーブルを参照して、brand_idを取得
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == brand.ec_brand_id).first()
+
+        # 2. Brandテーブルを参照して、brand_idに一致するデータのbrand_pictureを取得
+        picture = None
+        if ec_brand:
+            brand_data = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+            if brand_data and brand_data.brand_picture:
+                # 3. データをBase64にエンコードしてresponse_dataに"picture"を追加
+                picture = base64.b64encode(brand_data.brand_picture).decode('utf-8')
+
+        # response_dataに追加
+        response_data.append(
+            {
+                "ec_brand_id": brand.ec_brand_id,
+                "name": brand.name,
+                "description": brand.description,
+                "price": brand.price,
+                "count": int(cans / kinds),
+                "picture": picture,  # Base64エンコードされた画像データを追加
+            }
+        )
 
     return response_data
 
@@ -418,16 +467,32 @@ def recommend_luxury_products(user_id: int, category: str, cans: int, kinds: int
     result = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(selected_brand_ids)).all()
 
     # 6. 整理してresponse_dataとして返す
-    response_data = [
-        {
-            "ec_brand_id": brand.ec_brand_id,
-            "name": brand.name,
-            "description": brand.description,
-            "price": brand.price,
-            "count": int(cans / kinds),
-        }
-        for brand in result
-    ]
+    # resultに画像データを追加したものをresponse_dataとして返す
+    response_data = []
+
+    for brand in result:
+        # 1. EC_Brandテーブルを参照して、brand_idを取得
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == brand.ec_brand_id).first()
+
+        # 2. Brandテーブルを参照して、brand_idに一致するデータのbrand_pictureを取得
+        picture = None
+        if ec_brand:
+            brand_data = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+            if brand_data and brand_data.brand_picture:
+                # 3. データをBase64にエンコードしてresponse_dataに"picture"を追加
+                picture = base64.b64encode(brand_data.brand_picture).decode('utf-8')
+
+        # response_dataに追加
+        response_data.append(
+            {
+                "ec_brand_id": brand.ec_brand_id,
+                "name": brand.name,
+                "description": brand.description,
+                "price": brand.price,
+                "count": int(cans / kinds),
+                "picture": picture,  # Base64エンコードされた画像データを追加
+            }
+        )
 
     return response_data
 
@@ -461,16 +526,32 @@ def recommend_budget_products(user_id: int, category: str, cans: int, kinds: int
     result = db.query(EC_Brand).filter(EC_Brand.brand_id.in_(selected_brand_ids)).all()
 
     # 6. 整理してresponse_dataとして返す
-    response_data = [
-        {
-            "ec_brand_id": brand.ec_brand_id,
-            "name": brand.name,
-            "description": brand.description,
-            "price": brand.price,
-            "count": int(cans / kinds),
-        }
-        for brand in result
-    ]
+    # resultに画像データを追加したものをresponse_dataとして返す
+    response_data = []
+
+    for brand in result:
+        # 1. EC_Brandテーブルを参照して、brand_idを取得
+        ec_brand = db.query(EC_Brand).filter(EC_Brand.ec_brand_id == brand.ec_brand_id).first()
+
+        # 2. Brandテーブルを参照して、brand_idに一致するデータのbrand_pictureを取得
+        picture = None
+        if ec_brand:
+            brand_data = db.query(Brand).filter(Brand.brand_id == ec_brand.brand_id).first()
+            if brand_data and brand_data.brand_picture:
+                # 3. データをBase64にエンコードしてresponse_dataに"picture"を追加
+                picture = base64.b64encode(brand_data.brand_picture).decode('utf-8')
+
+        # response_dataに追加
+        response_data.append(
+            {
+                "ec_brand_id": brand.ec_brand_id,
+                "name": brand.name,
+                "description": brand.description,
+                "price": brand.price,
+                "count": int(cans / kinds),
+                "picture": picture,  # Base64エンコードされた画像データを追加
+            }
+        )
 
     return response_data
 

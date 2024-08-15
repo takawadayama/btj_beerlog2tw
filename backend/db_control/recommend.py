@@ -27,7 +27,7 @@ def get_ec_sets_by_category(db: Session, category: str):
             EC_Set.set_name,
             EC_Set.set_description,
         )
-        .filter(EC_Set.category == category)
+        .filter(EC_Set.category == category, EC_Set.ec_set_id < 900)  # ec_set_idが900未満のものを抽出(900以上はダミーデータ)
         .all()
     )
 

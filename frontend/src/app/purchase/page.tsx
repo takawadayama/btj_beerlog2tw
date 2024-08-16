@@ -81,13 +81,16 @@ export default function Home() {
   ) => {
     try {
       const ngIdList: number[] = ngList?.map((item) => item.ng_id);
-      const data = await getRecommendations({
-        ec_set_id,
-        category,
-        cans,
-        kinds,
-        ng_id: ngIdList,
-      });
+      const data = await getRecommendations(
+        {
+          ec_set_id,
+          category,
+          cans,
+          kinds,
+          ng_id: ngIdList,
+        },
+        jwt //ヘッダーにJWTを追加
+      );
 
       const updatedData = data.map((item) => ({
         ...item,

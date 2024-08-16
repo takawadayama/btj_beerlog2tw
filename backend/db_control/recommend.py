@@ -4,6 +4,7 @@ from sqlalchemy import select, and_
 
 from db_control.mymodels import Brand, Preference, User, EC_Brand, Survey, EC_Set, Purchase, PurchaseDetail
 from db_control.connect import get_db
+from db_control.token import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from db_control.schemas import RecommendQueryParams, RecommendResponseItem, ECSetItem
@@ -556,6 +557,23 @@ def recommend_budget_products(user_id: int, category: str, cans: int, kinds: int
     return response_data
 
 
+def create_function_mapping(db: Session):
+    # EC_Setテーブルからec_set_idが900未満のデータを読み込む
+    ec_sets = db.query(EC_Set).filter(EC_Set.ec_set_id < 900).all()
+
+    # マッピング用の辞書を作成
+    function_mapping = {}
+
+    for ec_set in ec_sets:
+        # algorithm_funcから関数名を取得し、グローバルスコープから関数オブジェクトを取得
+        function = globals().get(ec_set.algorithm_func)
+        if function:
+            # ec_set_idをキーとして関数をマッピング
+            function_mapping[ec_set.ec_set_id] = function
+
+    return function_mapping
+
+
 @router.get("/ec_sets", response_model=List[ECSetItem])
 def get_ec_sets(category: str, db: Session = Depends(get_db)):
     ec_sets = get_ec_sets_by_category(db, category)
@@ -571,6 +589,7 @@ def recommend(
     kinds: int = Query(...),
     ng_id: List[int] = Query([]),  # Pydanticのモデルではリストをうまく受け取れなったのでQueryを使う
     db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),  # ヘッダー内のJWTから取得
 ):
     # 検証用にPydanticのモデルへ入れておく
     params = RecommendQueryParams(ec_set_id=ec_set_id, category=category, cans=cans, kinds=kinds, ng_id=ng_id)
@@ -582,64 +601,14 @@ def recommend(
     kinds = params.kinds
     ng_id = params.ng_id
 
-    # 最終的にはJWTから取得する
-    user_id = 1
+    # マッピングのための辞書を作成(ec_set_id : algorithm_func)
+    function_mapping = create_function_mapping(db)
 
-    if ec_set_id == 2:
-
-        # ec_set_idとアルゴリズムの対応を、一旦、直に書いておく
-        # マッピングはうまく行かない
-        # 関数のマッピング
-        # function_mapping = {
-        #     # "recommend_popular_products": recommend_popular_products,  # 未実装
-        #     "recommend_preferred_products": recommend.recommend_preferred_products,
-        #     # "recommend_diverse_preferred_products": recommend_diverse_preferred_products,  # 未実装
-        # }
-
-        # algorithm_function = function_mapping.get("recommend_preferred_products")
-        # response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
-
-        response_data = recommend_preferred_products(user_id, category, cans, kinds, ng_id, db)
-
-    elif ec_set_id == 1:
-
-        response_data = recommend_popular_products(user_id, category, cans, kinds, ng_id, db)
-
-    elif ec_set_id == 3:
-
-        response_data = recommend_diverse_preferred_products(user_id, category, cans, kinds, ng_id, db)
-
-    elif ec_set_id == 4:
-
-        response_data = recommend_adventurous_products(user_id, category, cans, kinds, ng_id, db)
-
-    elif ec_set_id == 5:
-
-        response_data = recommend_luxury_products(user_id, category, cans, kinds, ng_id, db)
-
-    elif ec_set_id == 6:
-
-        response_data = recommend_budget_products(user_id, category, cans, kinds, ng_id, db)
-
-    else:
-
-        # ロジックをここに追加
-        # 例: 推奨事項の計算やデータベースクエリ
-
-        # クエリパラメータを使用してロジックを実装
-        # ここではダミーデータを返す
-
-        if category == "national":
-            response_data = [
-                {"ec_brand_id": 1, "name": "Brand A", "description": "Description A", "price": 100, "count": params.cans / 2},
-                {"ec_brand_id": 2, "name": "Brand B", "description": "Description B", "price": 200, "count": params.cans / 2},
-            ]
-
-        elif category == "craft":
-            response_data = [
-                {"ec_brand_id": 3, "name": "Brand C", "description": "Description C", "price": 100, "count": params.cans / 3},
-                {"ec_brand_id": 4, "name": "Brand D", "description": "Description D", "price": 200, "count": params.cans / 3},
-                {"ec_brand_id": 5, "name": "Brand E", "description": "Description E", "price": 200, "count": params.cans / 3},
-            ]
+    try:
+        # ec_set_idに対応した関数を使用する
+        algorithm_function = function_mapping[ec_set_id]  # キーが存在しない場合KeyErrorが発生
+        response_data = algorithm_function(user_id, category, cans, kinds, ng_id, db)
+    except KeyError:
+        raise ValueError(f"No function found for ec_set_id {ec_set_id}")
 
     return response_data

@@ -11,15 +11,7 @@ import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import {
-  ECSetItem,
-  RecommendResponseItem,
-  nationalCraftOptions,
-  PurchaseItem,
-  PurchaseSetItem,
-  NgList,
-  DecodedToken,
-} from "../../types/purchase_types";
+import { ECSetItem, RecommendResponseItem, nationalCraftOptions, PurchaseItem, PurchaseSetItem, NgList, DecodedToken } from "../../types/purchase_types";
 
 export default function Home() {
   const [nationalEcSets, setNationalEcSets] = useState<ECSetItem[]>([]);
@@ -33,9 +25,7 @@ export default function Home() {
   const [isNationalSelected, setIsNationalSelected] = useState(false);
   const [isCraftSelected, setIsCraftSelected] = useState(false);
   const [totalCans, setTotalCans] = useState<number>(24);
-  const [nationalCraftRatio, setNationalCraftRatio] = useState<{ national: number; craft: number }>(
-    nationalCraftOptions[24][1]
-  );
+  const [nationalCraftRatio, setNationalCraftRatio] = useState<{ national: number; craft: number }>(nationalCraftOptions[24][1]);
 
   const [nationalSet, setNationalSet] = useState<{ cans: number; set_name: string; set_id: number }>({
     cans: 0,
@@ -81,24 +71,19 @@ export default function Home() {
     }
   };
 
-  const fetchRecommendations = async (
-    set_name: string,
-    ec_set_id: number,
-    category: string,
-    cans: number,
-    kinds: number,
-    ngList: NgList[],
-    jwt:string
-  ) => {
+  const fetchRecommendations = async (set_name: string, ec_set_id: number, category: string, cans: number, kinds: number, ngList: NgList[], jwt: string) => {
     try {
       const ngIdList: number[] = ngList?.map((item) => item.ng_id);
-      const data = await getRecommendations({
-        ec_set_id,
-        category,
-        cans,
-        kinds,
-        ng_id: ngIdList,
-      }, jwt);
+      const data = await getRecommendations(
+        {
+          ec_set_id,
+          category,
+          cans,
+          kinds,
+          ng_id: ngIdList,
+        },
+        jwt
+      );
 
       const updatedData = data.map((item) => ({
         ...item,
@@ -111,18 +96,14 @@ export default function Home() {
         setNationalRecommendations(updatedData);
         setNationalSetDetails(updatedData);
         setSelectedSetDetails(updatedData);
-        setSelectedSetDescription(
-          nationalEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || ""
-        );
+        setSelectedSetDescription(nationalEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || "");
         setIsNationalSelected(true);
       } else if (category === "craft") {
         setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
         setCraftRecommendations(updatedData);
         setCraftSetDetails(updatedData);
         setSelectedSetDetails(updatedData);
-        setSelectedSetDescription(
-          craftEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || ""
-        );
+        setSelectedSetDescription(craftEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || "");
         setIsCraftSelected(true);
       }
       setIsModalOpen(true); // ポップアップ表示
@@ -183,6 +164,7 @@ export default function Home() {
         },
       };
       setPurchaseSetItemAll((prevItems) => [...prevItems, newPurchaseSetItem]);
+      handleOpenCartModal();
 
       console.log("Updated purchaseSetItemAll: ", purchaseSetItemAll);
     } else {
@@ -203,7 +185,8 @@ export default function Home() {
       toast.success("購入ありがとうございます！"); // 成功トーストメッセージを表示
       // `alert`は削除、トーストのみで通知
       setTimeout(() => {
-        router.push("/user");
+        // router.push("/user");
+        window.location.href = "/purchase";
       }, 1500); // トーストが表示されるのを少し待ってからリダイレクト
     } catch (error) {
       console.error("Error creating purchase:", error);
@@ -217,14 +200,14 @@ export default function Home() {
     setNationalSetDetails([]);
     setIsNationalSelected(false);
   };
-  
+
   const ResetCraftSetSelection = () => {
     setCraftSet({ cans: 0, set_name: "", set_id: 0 });
     setCraftSelectedSet(undefined);
     setCraftSetDetails([]);
     setIsCraftSelected(false);
   };
-  
+
   const handleResetCart = () => {
     console.log("Reset button clicked");
     setPurchaseSetItemAll([]); // カートをリセット
@@ -342,7 +325,8 @@ export default function Home() {
                     }}
                     className={`py-2 px-4 rounded-lg text-white font-bold w-full ${
                       nationalSelectedSet?.ec_set_id === ecSet.ec_set_id ? "bg-amber-600" : "bg-gray-300"
-                    } hover:bg-amber-500 transition-all duration-200`}
+                    } hover:bg-amber-500 transition-all duration-200 ${nationalCraftRatio.national === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={nationalCraftRatio.national === 0}
                   >
                     {ecSet.set_name}
                   </button>
@@ -363,7 +347,8 @@ export default function Home() {
                     }}
                     className={`py-2 px-4 rounded-lg text-white font-bold w-full ${
                       craftSelectedSet?.ec_set_id === ecSet.ec_set_id ? "bg-amber-600" : "bg-gray-300"
-                    } hover:bg-amber-500 transition-all duration-200`}
+                    } hover:bg-amber-500 transition-all duration-200 ${nationalCraftRatio.craft === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={nationalCraftRatio.craft === 0}
                   >
                     {ecSet.set_name}
                   </button>
@@ -378,9 +363,10 @@ export default function Home() {
         <button
           onClick={() => {
             handleAddToCart();
-            handleOpenCartModal();
+            // handleOpenCartModal();
           }}
-          className="bg-amber-600 hover:amber-700 text-white py-2 px-48 rounded-full shadow-xl transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center space-x-3 text-lg relative overflow-hidden">
+          className="bg-amber-600 hover:amber-700 text-white py-2 px-48 rounded-full shadow-xl transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center space-x-3 text-lg relative overflow-hidden"
+        >
           Step4 選択した銘柄を確認する
         </button>
       </div>
@@ -396,7 +382,9 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-lg p-8 w-3/4 max-h-full overflow-auto">
             <h2 className="text-lg font-bold mb-4">{nationalSelectedSet?.set_name || craftSelectedSet?.set_name}</h2>
             <p className="text-sm text-gray-600 mb-4">{selectedSetDescription}</p>
-            <div className="grid grid-cols-3 gap-4"> {/* 3列に分けて表示 */}
+            <div className="grid grid-cols-3 gap-4">
+              {" "}
+              {/* 3列に分けて表示 */}
               {selectedSetDetails.map((item) => (
                 <div key={item.ec_brand_id} className="mb-4 flex items-center">
                   {item.picture ? (
@@ -420,103 +408,100 @@ export default function Home() {
         </div>
       )}
 
-
       {/* Step4 の確認ポップアップ */}
       {isCartModalOpen && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-    onClick={handleResetCart} // ここで背景をクリックしたときにカートをリセットする
-  >
-    <div
-      className="bg-white rounded-lg shadow-lg p-8 w-3/4 max-h-full overflow-auto"
-      onClick={(e) => e.stopPropagation()} // このクリックイベントが背景に伝播しないようにする
-    >
-      <div className="flex justify-between mb-4">
-        <h2 className="text-lg font-bold">選択中の銘柄</h2>
-        {/* 合計金額と合計本数を表示 */}
-        <div className="text-right">
-          <p className="text-xl font-semibold">合計金額: {purchaseSetItemAll.reduce((total, item) => total + item.national_set.details.reduce((sum, detail) => sum + detail.price * detail.count, 0) + item.craft_set.details.reduce((sum, detail) => sum + detail.price * detail.count, 0), 0)} 円</p>
-          <p className="text-xl font-semibold">合計本数: {purchaseSetItemAll.reduce((total, item) => total + item.setDetails.cans, 0)} 本</p>
-        </div>
-      </div>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={handleResetCart} // ここで背景をクリックしたときにカートをリセットする
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-8 w-3/4 max-h-full overflow-auto"
+            onClick={(e) => e.stopPropagation()} // このクリックイベントが背景に伝播しないようにする
+          >
+            <div className="flex justify-between mb-4">
+              <h2 className="text-lg font-bold">選択中の銘柄</h2>
+              {/* 合計金額と合計本数を表示 */}
+              <div className="text-right">
+                <p className="text-xl font-semibold">
+                  合計金額:{" "}
+                  {purchaseSetItemAll.reduce(
+                    (total, item) =>
+                      total +
+                      item.national_set.details.reduce((sum, detail) => sum + detail.price * detail.count, 0) +
+                      item.craft_set.details.reduce((sum, detail) => sum + detail.price * detail.count, 0),
+                    0
+                  )}{" "}
+                  円
+                </p>
+                <p className="text-xl font-semibold">合計本数: {purchaseSetItemAll.reduce((total, item) => total + item.setDetails.cans, 0)} 本</p>
+              </div>
+            </div>
 
-      {/* ナショナルセット */}
-      {purchaseSetItemAll.map((item, index) => (
-        <div key={`national-set-${index}`} className="mb-8">
-          <h3 className="font-bold text-amber-600 text-xl mb-2">{item.national_set.set_name}</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {nationalEcSets.find((set) => set.ec_set_id === item.national_set.details[0]?.ec_set_id)?.set_description || ""}
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            {item.national_set.details.map((detail, detailIndex) => (
-              <div key={`national-${detailIndex}`} className="mb-4 flex items-center">
-                {detail.picture ? (
-                  <img
-                    src={`data:image/png;base64,${detail.picture}`}
-                    alt={detail.name}
-                    className="w-28 h-28 object-cover rounded-full border-2 border-amber-600 mr-4"
-                  />
-                ) : (
-                  <span className="w-28 h-28 rounded-full border-2 border-amber-600 mr-4 flex items-center justify-center">なし</span>
-                )}
-                <div>
-                  <p className="font-semibold">{detail.name}</p>
-                  <p className="text-sm text-gray-500">価格: {detail.price} 円</p>
-                  <p className="text-sm text-gray-500">本数: {detail.count} 本</p>
+            {/* ナショナルセット */}
+            {purchaseSetItemAll.map((item, index) => (
+              <div key={`national-set-${index}`} className="mb-8">
+                <h3 className="font-bold text-amber-600 text-xl mb-2">{item.national_set.set_name}</h3>
+                <p className="text-sm text-gray-600 mb-4">{nationalEcSets.find((set) => set.ec_set_id === item.national_set.details[0]?.ec_set_id)?.set_description || ""}</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {item.national_set.details.map((detail, detailIndex) => (
+                    <div key={`national-${detailIndex}`} className="mb-4 flex items-center">
+                      {detail.picture ? (
+                        <img src={`data:image/png;base64,${detail.picture}`} alt={detail.name} className="w-28 h-28 object-cover rounded-full border-2 border-amber-600 mr-4" />
+                      ) : (
+                        <span className="w-28 h-28 rounded-full border-2 border-amber-600 mr-4 flex items-center justify-center">なし</span>
+                      )}
+                      <div>
+                        <p className="font-semibold">{detail.name}</p>
+                        <p className="text-sm text-gray-500">価格: {detail.price} 円</p>
+                        <p className="text-sm text-gray-500">本数: {detail.count} 本</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      ))}
 
-      {/* クラフトセット */}
-      {purchaseSetItemAll.map((item, index) => (
-        <div key={`craft-set-${index}`} className="mb-8">
-          <h3 className="font-bold text-amber-600 text-xl mb-2">{item.craft_set.set_name}</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {craftEcSets.find((set) => set.ec_set_id === item.craft_set.details[0]?.ec_set_id)?.set_description || ""}
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            {item.craft_set.details.map((detail, detailIndex) => (
-              <div key={`craft-${detailIndex}`} className="mb-4 flex items-center">
-                {detail.picture ? (
-                  <img
-                    src={`data:image/png;base64,${detail.picture}`}
-                    alt={detail.name}
-                    className="w-28 h-28 object-cover rounded-full border-2 border-amber-600 mr-4"
-                  />
-                ) : (
-                  <span className="w-28 h-28 rounded-full border-2 border-amber-600 mr-4 flex items-center justify-center">なし</span>
-                )}
-                <div>
-                  <p className="font-semibold">{detail.name}</p>
-                  <p className="text-sm text-gray-500">価格: {detail.price} 円</p>
-                  <p className="text-sm text-gray-500">本数: {detail.count} 本</p>
+            {/* クラフトセット */}
+            {purchaseSetItemAll.map((item, index) => (
+              <div key={`craft-set-${index}`} className="mb-8">
+                <h3 className="font-bold text-amber-600 text-xl mb-2">{item.craft_set.set_name}</h3>
+                <p className="text-sm text-gray-600 mb-4">{craftEcSets.find((set) => set.ec_set_id === item.craft_set.details[0]?.ec_set_id)?.set_description || ""}</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {item.craft_set.details.map((detail, detailIndex) => (
+                    <div key={`craft-${detailIndex}`} className="mb-4 flex items-center">
+                      {detail.picture ? (
+                        <img src={`data:image/png;base64,${detail.picture}`} alt={detail.name} className="w-28 h-28 object-cover rounded-full border-2 border-amber-600 mr-4" />
+                      ) : (
+                        <span className="w-28 h-28 rounded-full border-2 border-amber-600 mr-4 flex items-center justify-center">なし</span>
+                      )}
+                      <div>
+                        <p className="font-semibold">{detail.name}</p>
+                        <p className="text-sm text-gray-500">価格: {detail.price} 円</p>
+                        <p className="text-sm text-gray-500">本数: {detail.count} 本</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      ))}
 
-      <div className="flex justify-center space-x-4 mt-4">
-        {/* <button
+            <div className="flex justify-center space-x-4 mt-4">
+              {/* <button
           onClick={handleResetCart}
           className="bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 z-50 relative"
         >
           もう一度選ぶ
         </button> */}
-        <button
-          onClick={handlePurchaseItemAll}
-          className="bg-amber-600 hover:amber-700 text-white py-2 px-96 rounded-full shadow-xl transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center space-x-3 text-lg overflow-hidden z-50 relative"
-        >
-          購入する
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              <button
+                onClick={handlePurchaseItemAll}
+                className="bg-amber-600 hover:amber-700 text-white py-2 px-96 rounded-full shadow-xl transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center space-x-3 text-lg overflow-hidden z-50 relative"
+              >
+                購入する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

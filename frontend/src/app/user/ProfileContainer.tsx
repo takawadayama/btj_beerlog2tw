@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchFavorites, fetchPreferences, fetchSearchResults, addFavorite, deleteFavorite, updatePreferences } from "./api";
+import { fetchFavorites, fetchPreferences, fetchSearchResults, addFavorite, deleteFavorite, updatePreferences, fetchFavoriteBrandPreferences } from "./api";
 import { User, Brand, Preference } from "./types";
 import RadarChart from "./RadarChart";
 import { ToastContainer, toast } from "react-toastify";
@@ -142,6 +142,44 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     }
   };
 
+  // 好きな銘柄のチャート図を取得（表示を変えるだけなので、DBへ反映させるには「更新」を押す必要がある）
+  const handleFetchPreferences = async () => {
+    try {
+      const preferencesData = await fetchFavoriteBrandPreferences(user.user_id);
+
+      if (preferencesData) {
+        // updatedPreferencesの更新
+        setUpdatedPreferences(preferencesData);
+
+        // preferencesの更新
+        setPreferences((prevPreferences) => prevPreferences.map((pref) => (preferencesData[pref.item_id] !== undefined ? { ...pref, score: preferencesData[pref.item_id] } : pref)));
+      }
+    } catch (error) {
+      console.error("Error fetching preferences:", error);
+    }
+  };
+
+  //　表示内容を元に戻す（好みテーブルから再取得する）
+  const handleResetPreferences = async () => {
+    try {
+      const preferencesData = await fetchPreferences(user.user_id);
+
+      // preferencesの更新
+      setPreferences(preferencesData);
+
+      // updatedPreferencesの更新
+      const preferencesMap = preferencesData.reduce(
+        (map, pref) => {
+          map[pref.item_id] = pref.score;
+          return map;
+        },
+        {} as { [key: number]: number }
+      );
+      setUpdatedPreferences(preferencesMap);
+    } catch (error) {
+      console.error("Error resetting preferences:", error);
+    }
+  };
   return (
     <div>
       <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-10">
@@ -155,7 +193,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
               <div className="mt-4">
                 <p>好きな銘柄:</p>
                 {favorites.map((favorite) => (
-                <div key={favorite.brand_id} className="flex items-center justify-between w-full mb-2">
+                  <div key={favorite.brand_id} className="flex items-center justify-between w-full mb-2">
                     <div className="flex items-center">
                       <img src={`data:image/png;base64,${favorite.brand_logo}`} alt={favorite.brand_name} className="w-10 h-10 object-cover rounded-full border-2 border-amber-600 mr-4" />
                       <p>{favorite.brand_name}</p>
@@ -186,6 +224,14 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                     </button>
                   </>
                 )}
+                <div>
+                  <button onClick={handleFetchPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2 mr-2">
+                    好きな銘柄からチャートを作成
+                  </button>
+                  <button onClick={handleResetPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
+                    元に戻す
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -235,7 +281,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                   </button>
                 </div>
               </div>
-  
+
               <div
                 className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg ml-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
                 onClick={() => (window.location.href = "/purchase")}
@@ -273,7 +319,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
             </div>
           </div>
         </div>
-  
+
         {/* 右 */}
         <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
           <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
@@ -283,12 +329,11 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
             </button>
           </form>
         </div>
-  
+
         <ToastContainer position="top-right" autoClose={1000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       </div>
     </div>
   );
-  
 };
 
 export default ProfileContainer;

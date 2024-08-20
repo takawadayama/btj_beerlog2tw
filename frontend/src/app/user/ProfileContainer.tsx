@@ -44,7 +44,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     };
 
     fetchData();
-  }, [user.user_id, favorites]);
+  }, [user.user_id]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -80,7 +80,8 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     if (selectedFavorite) {
       try {
         await addFavorite(user.user_id, selectedFavorite.brand_name);
-        setFavorites([...favorites, selectedFavorite]);
+        const favoritesData = await fetchFavorites(user.user_id);
+        setFavorites(favoritesData);
         setNewFavorite("");
         setSelectedFavorite(null);
         setShowInput(false);
@@ -144,6 +145,11 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
 
   // 好きな銘柄のチャート図を取得（表示を変えるだけなので、DBへ反映させるには「更新」を押す必要がある）
   const handleFetchPreferences = async () => {
+    if (favorites.length === 0) {
+      alert("好きな銘柄を追加してください");
+      return;
+    }
+
     try {
       const preferencesData = await fetchFavoriteBrandPreferences(user.user_id);
 

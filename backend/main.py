@@ -70,15 +70,25 @@ def read_user_preferences(user_id: int, db: Session = Depends(connect.get_db)):
     return preferences
 
 
+# 同一ユーザーに対して、brand_idを重複して登録しないように修正
 @app.post("/add_favorite", response_model=schemas.Brand)
 def add_favorite(favorite: schemas.FavoriteCreate, db: Session = Depends(connect.get_db)):
     brand = db.query(Brand).filter(Brand.brand_name == favorite.brand_name).first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+
+    # user_id と brand_id の組み合わせがすでに存在するか確認
+    existing_favorite = db.query(Favorite).filter(Favorite.user_id == favorite.user_id, Favorite.brand_id == brand.brand_id).first()
+
+    if existing_favorite:
+        raise HTTPException(status_code=400, detail="Favorite already exists for this user")
+
+    # 新しいお気に入りを作成
     new_favorite = Favorite(user_id=favorite.user_id, brand_id=brand.brand_id)
     db.add(new_favorite)
     db.commit()
     db.refresh(new_favorite)
+
     return brand
 
 

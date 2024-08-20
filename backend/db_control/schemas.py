@@ -202,3 +202,8 @@ class Purchaselog(BaseModel):
 
 class UserNameResponse(BaseModel):
     user_name: str
+
+
+# frontでは整数値が扱うので、返す値を丸めておく。
+class BrandPreferences(BaseModel):
+    preferences: Dict[int, int]

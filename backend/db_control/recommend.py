@@ -1,13 +1,13 @@
 import pandas as pd
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
-from db_control.mymodels import Brand, Preference, User, EC_Brand, Survey, EC_Set, Purchase, PurchaseDetail
+from db_control.mymodels import Brand, Preference, User, EC_Brand, Survey, EC_Set, Purchase, PurchaseDetail, Favorite
 from db_control.connect import get_db
 from db_control.token import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from db_control.schemas import RecommendQueryParams, RecommendResponseItem, ECSetItem
+from db_control.schemas import RecommendQueryParams, RecommendResponseItem, ECSetItem, BrandPreferences
 from typing import List
 
 # from .mymodels import Survey, Brand, Preference, User, EC_Brand, EC_Set
@@ -612,3 +612,35 @@ def recommend(
         raise ValueError(f"No function found for ec_set_id {ec_set_id}")
 
     return response_data
+
+
+# エンドポイントの定義
+@router.get("/favorite_brand_preferences", response_model=BrandPreferences)
+def read_favorite_brand_preferences(user_id: int, db: Session = Depends(get_db)):
+    # 1. ユーザーの年齢と性別を取得
+    age, gender = get_user_age_and_gender(user_id, db)
+
+    if age is None or gender is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 2. Favoriteテーブルからbrand_idを取得
+    favorite_query = select(Favorite.brand_id).where(Favorite.user_id == user_id)
+    favorite_brands = db.execute(favorite_query).scalars().all()
+
+    if not favorite_brands:
+        raise HTTPException(status_code=404, detail="No favorite brands found for this user")
+
+    # 3. Surveyテーブルから条件に合致するデータを抽出
+    survey_query = (
+        select(Survey.item_id, func.avg(Survey.score).label('avg_score'))
+        .where(Survey.age_lower_limit <= age, Survey.age_upper_limit >= age, Survey.gender == gender, Survey.brand_id.in_(favorite_brands))
+        .group_by(Survey.item_id)
+    )
+
+    survey_results = db.execute(survey_query).fetchall()
+
+    # 4. {キーをitem_id、バリューをscoreの平均値を四捨五入してint型に変換}の形に整理
+    preferences_dict = {item_id: round(avg_score) for item_id, avg_score in survey_results}
+
+    # 5. BrandPreferencesの形式で返す
+    return BrandPreferences(preferences=preferences_dict)

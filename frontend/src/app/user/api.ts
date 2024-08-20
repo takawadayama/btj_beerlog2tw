@@ -1,14 +1,14 @@
-import axios from 'axios';
-import { User, Brand, Preference } from './types';
+import axios from "axios";
+import { User, Brand, Preference } from "./types";
 
 export const fetchFavorites = async (user_id: number): Promise<Brand[]> => {
   try {
     const response = await axios.get<Brand[]>(`http://localhost:8000/user_favorites`, {
-      params: { user_id }
+      params: { user_id },
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch favorites:', error);
+    console.error("Failed to fetch favorites:", error);
     throw error;
   }
 };
@@ -16,11 +16,11 @@ export const fetchFavorites = async (user_id: number): Promise<Brand[]> => {
 export const fetchPreferences = async (user_id: number): Promise<Preference[]> => {
   try {
     const response = await axios.get<Preference[]>(`http://localhost:8000/user_preferences`, {
-      params: { user_id }
+      params: { user_id },
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch preferences:', error);
+    console.error("Failed to fetch preferences:", error);
     throw error;
   }
 };
@@ -28,49 +28,70 @@ export const fetchPreferences = async (user_id: number): Promise<Preference[]> =
 export const fetchSearchResults = async (search_term: string): Promise<Brand[]> => {
   try {
     const response = await axios.get<Brand[]>(`http://localhost:8000/search_brands`, {
-      params: { search_term }
+      params: { search_term },
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch search results:', error);
+    console.error("Failed to fetch search results:", error);
     throw error;
   }
 };
 
 export const addFavorite = async (user_id: number, brand_name: string): Promise<void> => {
   try {
-    await axios.post('http://localhost:8000/add_favorite', {
+    await axios.post("http://localhost:8000/add_favorite", {
       user_id,
-      brand_name
+      brand_name,
     });
   } catch (error) {
-    console.error('Failed to add favorite:', error);
+    console.error("Failed to add favorite:", error);
     throw error;
   }
 };
 
 export const deleteFavorite = async (user_id: number, brand_id: number): Promise<void> => {
   try {
-    await axios.delete('http://localhost:8000/delete_favorite', {
+    await axios.delete("http://localhost:8000/delete_favorite", {
       params: {
         user_id,
-        brand_id
-      }
+        brand_id,
+      },
     });
   } catch (error) {
-    console.error('Failed to delete favorite:', error);
+    console.error("Failed to delete favorite:", error);
     throw error;
   }
 };
 
 export const updatePreferences = async (user_id: number, preferences: { [key: number]: number }): Promise<void> => {
   try {
-    await axios.post('http://localhost:8000/update_preferences', {
+    await axios.post("http://localhost:8000/update_preferences", {
       user_id,
-      preferences
+      preferences,
     });
   } catch (error) {
-    console.error('Failed to update preferences:', error);
+    console.error("Failed to update preferences:", error);
+    throw error;
+  }
+};
+
+// 好みのブランドのチャート図を取得する関数を追加
+interface BrandPreferences {
+  preferences: { [key: number]: number };
+}
+
+export const fetchFavoriteBrandPreferences = async (user_id: number): Promise<{ [key: number]: number } | null> => {
+  try {
+    const response = await axios.get("http://localhost:8000/favorite_brand_preferences", {
+      params: {
+        user_id,
+      },
+    });
+
+    // 成功時にデータを返す
+    return response.data.preferences;
+  } catch (error) {
+    console.error("Failed to fetch brand preferences:", error);
     throw error;
   }
 };

@@ -226,7 +226,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                 )}
                 <div>
                   <button onClick={handleFetchPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2 mr-2">
-                    好きな銘柄からチャートを作成
+                    好きな銘柄からチャート作成
                   </button>
                   <button onClick={handleResetPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
                     元に戻す

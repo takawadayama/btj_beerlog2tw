@@ -44,7 +44,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     };
 
     fetchData();
-  }, [user.user_id]);
+  }, [user.user_id, favorites]);
 
   useEffect(() => {
     const fetchResults = async () => {

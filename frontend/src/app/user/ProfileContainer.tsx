@@ -68,30 +68,43 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
     setIsNewFavoriteSelected(false);
   };
 
-  const handleFavoriteSelect = (brand: Brand) => {
+  const handleFavoriteSelect = async (brand: Brand) => {
     setSelectedFavorite(brand);
     setNewFavorite(brand.brand_name);
     setIsNewFavoriteSelected(true);
     setSearchResults([]);
-  };
-
-  const handleFavoriteSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedFavorite) {
-      try {
-        await addFavorite(user.user_id, selectedFavorite.brand_name);
-        const favoritesData = await fetchFavorites(user.user_id);
-        setFavorites(favoritesData);
-        setNewFavorite("");
-        setSelectedFavorite(null);
-        setShowInput(false);
-        toast.success("好みの銘柄を追加しました！");
-      } catch (error) {
-        console.error("Failed to add favorite:", error);
-        toast.error("銘柄の追加に失敗しました");
-      }
+  
+    try {
+      await addFavorite(user.user_id, brand.brand_name);
+      const favoritesData = await fetchFavorites(user.user_id);
+      setFavorites(favoritesData);
+      setNewFavorite("");
+      setSelectedFavorite(null);
+      setShowInput(false);
+      toast.success("好みの銘柄を追加しました！");
+    } catch (error) {
+      console.error("Failed to add favorite:", error);
+      toast.error("銘柄の追加に失敗しました");
     }
   };
+
+  // const handleFavoriteSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (selectedFavorite) {
+  //     try {
+  //       await addFavorite(user.user_id, selectedFavorite.brand_name);
+  //       const favoritesData = await fetchFavorites(user.user_id);
+  //       setFavorites(favoritesData);
+  //       setNewFavorite("");
+  //       setSelectedFavorite(null);
+  //       setShowInput(false);
+  //       toast.success("好みの銘柄を追加しました！");
+  //     } catch (error) {
+  //       console.error("Failed to add favorite:", error);
+  //       toast.error("銘柄の追加に失敗しました");
+  //     }
+  //   }
+  // };
 
   const handleFavoriteDelete = async (brand_id: number) => {
     confirmAlert({
@@ -186,62 +199,92 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
       console.error("Error resetting preferences:", error);
     }
   };
+  
   return (
     <div>
-      <div className="bg-gray-200 rounded p-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-10">
+      <div className="bg-gray-200 rounded px-4 grid grid-cols-2 gap-4 mb-10 pt-10 pr-5">
         {/* 左 */}
-        <div className="bg-gray-200 p-4 rounded flex flex-col items-center col-span-1" style={{ height: "auto" }}>
+        <div className="bg-gray-200 pl-4 rounded flex flex-col items-center col-span-1" style={{ height: "auto" }}>
           <div className="flex items-start w-full mb-4">
             <img src={`data:image/jpeg;base64,${user.user_picture}`} alt="User Picture" className="rounded-full w-56 h-56 object-cover mb-2 mr-4" />
             <div>
               <h2 className="text-xl font-bold">{user.user_name}</h2>
               <p>{user.user_profile}</p>
-              <div className="mt-4">
-                <p>好きな銘柄:</p>
+              <div className="mt-3">
+                <div className="mt-3 flex items-center">
+                  <p className="mr-2 font-bold text-gray-800">好きな銘柄:</p>
+                  <button onClick={() => setShowInput(true)} className="text-blue-500">
+                    <AddCircleOutlineIcon style={{ fontSize: "2rem" }} />
+                  </button>
+                </div>
+
                 {favorites.map((favorite) => (
                   <div key={favorite.brand_id} className="flex items-center justify-between w-full mb-2">
-                    <div className="flex items-center">
+                    <div className="flex items-center pr-5">
                       <img src={`data:image/png;base64,${favorite.brand_logo}`} alt={favorite.brand_name} className="w-10 h-10 object-cover rounded-full border-2 border-amber-600 mr-4" />
                       <p>{favorite.brand_name}</p>
                     </div>
                     <button onClick={() => handleFavoriteDelete(favorite.brand_id)} className="text-red-500">
-                      <RemoveCircleOutlineIcon />
+                      <RemoveCircleOutlineIcon style={{ fontSize: "2rem" }} />
                     </button>
                   </div>
                 ))}
-                <button onClick={() => setShowInput(true)} className="mt-2 text-blue-500">
-                  <AddCircleOutlineIcon />
-                </button>
+                {/* <div className="flex justify-center mt-1">
+                  <button onClick={() => setShowInput(true)} className="text-blue-500">
+                    <AddCircleOutlineIcon style={{ fontSize: "2rem" }} />
+                  </button>
+                </div> */}
                 {showInput && (
                   <>
-                    <input type="text" value={newFavorite} onChange={handleFavoriteChange} placeholder="好きな銘柄を追加" className="border p-2 rounded w-full mt-2" />
+                    <input
+                      type="text"
+                      value={newFavorite}
+                      onChange={handleFavoriteChange}
+                      placeholder="好きな銘柄を入力"
+                      className="border-2 border-amber-600 p-2 rounded-lg w-full mt-2 focus:outline-none focus:ring-2 focus:ring-amber-600 bg-gray-50 shadow-sm"
+                    />
                     {searchResults.length > 0 && (
-                      <ul className="border mt-2 rounded w-full">
+                      <ul className="border border-amber-600 mt-2 rounded-lg w-full bg-white shadow-lg">
                         {searchResults.map((result) => (
-                          <li key={result.brand_id} onClick={() => handleFavoriteSelect(result)} className="cursor-pointer p-2 hover:bg-gray-300 flex items-center">
-                            <img src={`data:image/png;base64,${result.brand_logo}`} alt={result.brand_name} className="w-6 h-6 object-cover rounded-full border-2 border-amber-600 mr-2" />
+                          <li
+                            key={result.brand_id}
+                            onClick={() => handleFavoriteSelect(result)}
+                            className="cursor-pointer p-2 hover:bg-amber-100 flex items-center"
+                          >
+                            <img
+                              src={`data:image/png;base64,${result.brand_logo}`}
+                              alt={result.brand_name}
+                              className="w-6 h-6 object-cover rounded-full border-2 border-amber-600 mr-2"
+                            />
                             {result.brand_name}
                           </li>
                         ))}
                       </ul>
                     )}
-                    <button onClick={handleFavoriteSubmit} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
+                    {/* <button onClick={handleFavoriteSubmit} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 mb-3 rounded mt-2">
                       追加する
-                    </button>
+                    </button> */}
                   </>
                 )}
-                <div>
-                  <button onClick={handleFetchPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2 mr-2">
-                    好きな銘柄からチャート作成
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={handleFetchPreferences}
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                    style={{ marginRight: "10px" }}
+                  >
+                    チャートに反映
                   </button>
-                  <button onClick={handleResetPreferences} className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2">
+                  <button
+                    onClick={handleResetPreferences}
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                  >
                     元に戻す
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex justify-around w-3/5 mt-2">
+          <div className="flex justify-around w-3/5">
             <div className="text-center">
               <p className="font-bold">フォロワー</p>
               <p>958</p>
@@ -258,7 +301,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
           <div className="flex justify-center w-full mt-4">
             <div className="flex justify-between w-full max-w-3xl">
               <div
-                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg mr-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
+                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 px-4 pt-2 pb-5 rounded-lg mr-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
                 onClick={() => (window.location.href = "/")}
               >
                 <h2 className="text-lg font-bold mb-2">お店でびあログ</h2>
@@ -280,7 +323,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                 </table>
                 <div className="absolute bottom-1 right-2">
                   <button
-                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 mb-1 rounded-full shadow-md transform transition-all duration-300"
                     onClick={() => (window.location.href = "/search")}
                   >
                     飲食店を探す &rarr;
@@ -289,7 +332,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
               </div>
 
               <div
-                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 p-4 rounded-lg ml-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
+                className="relative text-center cursor-pointer border-2 border-amber-600 bg-amber-100 px-4 pt-2 pb-5 rounded-lg ml-2 w-1/2 hover:bg-amber-500 hover:text-white transform hover:scale-105 transition-all duration-300 shadow-lg"
                 onClick={() => (window.location.href = "/purchase")}
               >
                 <h2 className="text-lg font-bold mb-2">おうちでびあログ</h2>
@@ -315,7 +358,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
                 </table>
                 <div className="absolute bottom-1 right-2">
                   <button
-                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+                    className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 mb-1 rounded-full shadow-md transform transition-all duration-300"
                     onClick={() => (window.location.href = "/recommendation")}
                   >
                     おすすめ銘柄をお届け &rarr;
@@ -327,10 +370,14 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({ user }) => {
         </div>
 
         {/* 右 */}
-        <div className="bg-gray-200 p-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
+        <div className="bg-gray-200 pr-4 rounded flex flex-col items-center justify-center relative col-span-1" style={{ height: "auto" }}>
           <RadarChart preferences={preferences} onPreferenceChange={handlePreferenceChange} />
           <form onSubmit={handlePreferencesSubmit} className="w-full mt-4 flex justify-center">
-            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded mt-2" style={{ position: "absolute", bottom: "1px", right: "10px" }}>
+            <button
+              type="submit"
+              className="text-amber-600 hover:text-white bg-white hover:bg-amber-600 border-2 border-amber-600 text-sm font-semibold px-4 py-2 rounded-full shadow-md transform transition-all duration-300"
+              style={{ position: "absolute", bottom: "1px", right: "10px" }}
+            >
               更新
             </button>
           </form>

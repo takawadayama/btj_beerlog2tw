@@ -55,6 +55,7 @@ export default function Home() {
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [selectedSetDetails, setSelectedSetDetails] = useState<RecommendResponseItem[]>([]);
   const [selectedSetDescription, setSelectedSetDescription] = useState("");
+  const [selectedSetName, setSelectedSetName] = useState("");
 
   const router = useRouter();
 
@@ -97,6 +98,7 @@ export default function Home() {
         setNationalSetDetails(updatedData);
         setSelectedSetDetails(updatedData);
         setSelectedSetDescription(nationalEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || "");
+        setSelectedSetName(set_name);
         setIsNationalSelected(true);
       } else if (category === "craft") {
         setCraftSet({ cans: cans, set_name: set_name, set_id: ec_set_id });
@@ -104,6 +106,7 @@ export default function Home() {
         setCraftSetDetails(updatedData);
         setSelectedSetDetails(updatedData);
         setSelectedSetDescription(craftEcSets.find((set) => set.ec_set_id === ec_set_id)?.set_description || "");
+        setSelectedSetName(set_name);
         setIsCraftSelected(true);
       }
       setIsModalOpen(true); // ポップアップ表示
@@ -380,7 +383,7 @@ export default function Home() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-8 w-3/4 max-h-full overflow-auto">
-            <h2 className="text-lg font-bold mb-4">{nationalSelectedSet?.set_name || craftSelectedSet?.set_name}</h2>
+            <h2 className="text-lg font-bold mb-4">{selectedSetName}</h2>
             <p className="text-sm text-gray-600 mb-4">{selectedSetDescription}</p>
             <div className="grid grid-cols-3 gap-4">
               {" "}

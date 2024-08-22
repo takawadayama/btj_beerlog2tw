@@ -23,7 +23,7 @@ const Login = () => {
     try {
       const hashedPassword = await hashPassword(password); // ハッシュ化されたパスワード
 
-      const response = await fetch("http://127.0.0.1:8000/token", {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + "/token", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

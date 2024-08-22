@@ -56,7 +56,7 @@ export default function UserPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`http://localhost:8000/user_with_photos`, {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_ENDPOINT + `/user_with_photos`, {
         params: { user_id: id },
       });
       setUserWithPhotos(response.data);

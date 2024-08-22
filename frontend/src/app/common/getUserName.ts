@@ -6,7 +6,7 @@ interface UserNameResponse {
 
 export async function getUserName(token: string): Promise<string | null> {
   try {
-    const response = await axios.get<UserNameResponse>("http://localhost:8000/username/", {
+    const response = await axios.get<UserNameResponse>(process.env.NEXT_PUBLIC_API_ENDPOINT + "/username/", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

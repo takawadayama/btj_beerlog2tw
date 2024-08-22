@@ -58,7 +58,7 @@ const SurveyPage = () => {
 
   const fetchItems = async () => {
     try {
-      const response = await fetch("http://localhost:8000/items");
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + "/items");
       const data = await response.json();
       setItems(data);
     } catch (error) {
@@ -68,11 +68,11 @@ const SurveyPage = () => {
 
   const fetchBrands = async (purchaseId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/purchase/${purchaseId}/brands`);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/purchase/${purchaseId}/brands`);
       const data = await response.json();
       const brandsWithLogo = await Promise.all(
         data.map(async (brand: Brand) => {
-          const logoResponse = await fetch(`http://localhost:8000/brands/${brand.brand_id}/logo`);
+          const logoResponse = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/brands/${brand.brand_id}/logo`);
           const logoBlob = await logoResponse.blob();
           const logoUrl = URL.createObjectURL(logoBlob);
           return { ...brand, brand_logo_url: logoUrl };
@@ -89,7 +89,7 @@ const SurveyPage = () => {
 
   const fetchAverageScores = async (brandId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/brand/${brandId}/average_scores`);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/brand/${brandId}/average_scores`);
       const data = await response.json();
       console.log(`Average scores for brand ${brandId}:`, data); // デバッグ用のログ出力
       setAverageScores((prevScores) => ({
@@ -103,7 +103,7 @@ const SurveyPage = () => {
 
   const fetchPurchaseDate = async (purchaseId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/purchase/${purchaseId}/date`);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/purchase/${purchaseId}/date`);
       const data = await response.json();
       setPurchaseDate(data.purchase_date);
     } catch (error) {
@@ -122,7 +122,7 @@ const SurveyPage = () => {
 
   const fetchUserData = async (userId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/user/${userId}`);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/user/${userId}`);
       if (response.ok) {
         const data = await response.json();
         console.log("Fetched user data:", data); // レスポンス全体をコンソールに表示
@@ -176,7 +176,7 @@ const SurveyPage = () => {
           })),
         };
 
-        const response = await fetch(`http://localhost:8000/survey/${purchaseId}`, {
+        const response = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/survey/${purchaseId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -189,7 +189,7 @@ const SurveyPage = () => {
       }
 
       // purchasesテーブルのsurvey_completionを1に更新
-      await fetch(`http://localhost:8000/purchase/${purchaseId}/complete`, {
+      await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + `/purchase/${purchaseId}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

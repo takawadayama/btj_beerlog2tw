@@ -3,7 +3,7 @@ import { User, Brand, Preference, EcBrandItem } from "../../types/purchase_types
 
 export const fetchFavorites = async (user_id: number): Promise<Brand[]> => {
   try {
-    const response = await axios.get<Brand[]>(`http://localhost:8000/user_favorites`, {
+    const response = await axios.get<Brand[]>(process.env.NEXT_PUBLIC_API_ENDPOINT + `/user_favorites`, {
       params: { user_id },
     });
     return response.data;
@@ -15,7 +15,7 @@ export const fetchFavorites = async (user_id: number): Promise<Brand[]> => {
 
 export const fetchPreferences = async (user_id: number): Promise<Preference[]> => {
   try {
-    const response = await axios.get<Preference[]>(`http://localhost:8000/user_preferences`, {
+    const response = await axios.get<Preference[]>(process.env.NEXT_PUBLIC_API_ENDPOINT + `/user_preferences`, {
       params: { user_id },
     });
     return response.data;
@@ -27,7 +27,7 @@ export const fetchPreferences = async (user_id: number): Promise<Preference[]> =
 
 export const fetchSearchResults = async (search_term: string): Promise<Brand[]> => {
   try {
-    const response = await axios.get<Brand[]>(`http://localhost:8000/search_brands`, {
+    const response = await axios.get<Brand[]>(process.env.NEXT_PUBLIC_API_ENDPOINT + `/search_brands`, {
       params: { search_term },
     });
     return response.data;
@@ -39,7 +39,7 @@ export const fetchSearchResults = async (search_term: string): Promise<Brand[]> 
 
 export const addFavorite = async (user_id: number, brand_name: string): Promise<void> => {
   try {
-    await axios.post("http://localhost:8000/add_favorite", {
+    await axios.post(process.env.NEXT_PUBLIC_API_ENDPOINT + "/add_favorite", {
       user_id,
       brand_name,
     });
@@ -51,7 +51,7 @@ export const addFavorite = async (user_id: number, brand_name: string): Promise<
 
 export const deleteFavorite = async (user_id: number, brand_id: number): Promise<void> => {
   try {
-    await axios.delete("http://localhost:8000/delete_favorite", {
+    await axios.delete(process.env.NEXT_PUBLIC_API_ENDPOINT + "/delete_favorite", {
       params: {
         user_id,
         brand_id,
@@ -65,7 +65,7 @@ export const deleteFavorite = async (user_id: number, brand_id: number): Promise
 
 export const updatePreferences = async (user_id: number, preferences: { [key: number]: number }): Promise<void> => {
   try {
-    await axios.post("http://localhost:8000/update_preferences", {
+    await axios.post(process.env.NEXT_PUBLIC_API_ENDPOINT + "/update_preferences", {
       user_id,
       preferences,
     });
@@ -77,7 +77,7 @@ export const updatePreferences = async (user_id: number, preferences: { [key: nu
 
 export const fetchEcSearchResults = async (search_term: string): Promise<EcBrandItem[]> => {
   try {
-    const response = await axios.get<EcBrandItem[]>(`http://localhost:8000/search_ec_brands`, {
+    const response = await axios.get<EcBrandItem[]>(process.env.NEXT_PUBLIC_API_ENDPOINT + `/search_ec_brands`, {
       params: { search_term },
     });
     return response.data;

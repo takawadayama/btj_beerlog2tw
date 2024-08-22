@@ -2,7 +2,7 @@ import axios from "axios";
 import { Purchaselog } from "../../types/purchase_types";
 
 export const fetchPurchaselog = async (jwt: string): Promise<Purchaselog[]> => {
-  const response = await axios.get<Purchaselog[]>("http://127.0.0.1:8000/purchaselog", {
+  const response = await axios.get<Purchaselog[]>(process.env.NEXT_PUBLIC_API_ENDPOINT + "/purchaselog", {
     headers: {
       Authorization: `Bearer ${jwt}`,
     },

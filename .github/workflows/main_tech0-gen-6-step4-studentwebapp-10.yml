@@ -39,13 +39,13 @@ jobs:
       - name: Zip artifact for deployment
         run: |
           cd frontend
-          zip release.zip ./* -r
+          zip -r ../release.zip ./*
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: frontend/release.zip
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -61,7 +61,7 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip frontend/release.zip
+        run: unzip release.zip
       
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp

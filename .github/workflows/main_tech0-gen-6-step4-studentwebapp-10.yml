@@ -20,29 +20,34 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
+        working-directory: ./frontend
 
       - name: Cache Node.js modules
         uses: actions/cache@v3
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}-v2
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}-v2
           restore-keys: |
             ${{ runner.os }}-node-
+        working-directory: ./frontend
 
       - name: npm install, build, and test
         run: |
           npm install
           npm run build --if-present
           npm run test --if-present
+        working-directory: ./frontend
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
+        working-directory: ./frontend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
           path: release.zip
+        working-directory: ./frontend
 
   deploy:
     runs-on: ubuntu-latest
